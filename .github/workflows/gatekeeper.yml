@@ -1,0 +1,35 @@
+name: PR Gatekeeper
+
+on:
+  pull_request:
+    branches: ["main"]
+
+jobs:
+  gatekeeper:
+    name: CI Pipeline (Lint, Typecheck, Test, Build)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install Node Dependencies
+        run: npm ci
+
+      - name: Install Python Dependencies (ai-service)
+        run: pip install -r apps/ai-service/requirements.txt
+        
+      - name: Turborepo Pipeline
+        run: npx turbo run lint typecheck test build

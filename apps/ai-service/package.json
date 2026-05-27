@@ -7,6 +7,6 @@
     "build": "echo 'Python service — no TS build required'",
     "typecheck": "echo 'Use mypy or pyright for Python type checking'",
     "clean": "find . -type d -name __pycache__ -exec rm -rf {} + 2>/dev/null; true",
-    "lint": "echo 'lint not configured yet'"
+    "lint": "ruff check . && ruff format --check ."
   }
 }

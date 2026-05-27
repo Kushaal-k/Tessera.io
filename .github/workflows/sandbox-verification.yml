@@ -1,0 +1,56 @@
+name: Sandbox Verification Pipeline
+
+on:
+  pull_request:
+    paths:
+      - 'apps/execution-engine/**'
+      - '.github/workflows/sandbox-verification.yml'
+  push:
+    branches: ["main"]
+    paths:
+      - 'apps/execution-engine/**'
+
+jobs:
+  verify-sandbox:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Build Execution Engine Docker Image
+        run: |
+          docker build -t tessera/execution-engine:ci apps/execution-engine
+
+      - name: Run Trivy Vulnerability Scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: 'tessera/execution-engine:ci'
+          format: 'table'
+          exit-code: '1' # Fails the pipeline if vulnerabilities are found
+          ignore-unfixed: true
+          vuln-type: 'os,library'
+          severity: 'CRITICAL,HIGH'
+
+      - name: Smoke Test - Python Execution
+        run: |
+          docker run --rm --memory="128m" --cpus="0.5" tessera/execution-engine:ci python3 -c "print('Python sandbox works!')"
+
+      - name: Smoke Test - Node.js Execution
+        run: |
+          docker run --rm --memory="128m" --cpus="0.5" tessera/execution-engine:ci node -e "console.log('Node sandbox works!')"
+
+      - name: Smoke Test - C++ Compilation and Execution
+        run: |
+          # Create a temporary directory for the C++ file on the host runner
+          mkdir -p /tmp/sandbox-cpp
+          cat << 'EOF' > /tmp/sandbox-cpp/main.cpp
+          #include <iostream>
+          int main() {
+              std::cout << "C++ sandbox works!" << std::endl;
+              return 0;
+          }
+          EOF
+          
+          # Compile and run inside the container with stricter memory limits
+          docker run --rm -v /tmp/sandbox-cpp:/workspace -w /workspace --memory="256m" --cpus="1.0" tessera/execution-engine:ci bash -c "g++ main.cpp -o main && ./main"
