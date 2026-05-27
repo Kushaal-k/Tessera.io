@@ -1,0 +1,45 @@
+name: Publish to GHCR
+
+on:
+  push:
+    branches:
+      - main
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME_SYNC: ${{ github.repository }}-sync-server
+  IMAGE_NAME_ENGINE: ${{ github.repository }}-execution-worker
+  IMAGE_NAME_SANDBOX: ${{ github.repository }}-sandbox
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Log in to the Container registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and Push Sync Server
+        run: |
+          docker build -f apps/sync-server/Dockerfile -t ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_SYNC }}:latest .
+          docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_SYNC }}:latest
+
+      - name: Build and Push Execution Engine Worker
+        run: |
+          docker build -f apps/execution-engine/Dockerfile.worker -t ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_ENGINE }}:latest .
+          docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_ENGINE }}:latest
+
+      - name: Build and Push Sandbox Image
+        run: |
+          docker build -f apps/execution-engine/Dockerfile -t ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_SANDBOX }}:latest apps/execution-engine
+          docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_SANDBOX }}:latest

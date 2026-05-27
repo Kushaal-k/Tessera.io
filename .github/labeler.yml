@@ -1,0 +1,19 @@
+frontend:
+  - apps/web/**/*
+  - packages/ui-components/**/*
+
+ai/python:
+  - apps/ai-service/**/*
+
+backend/sync:
+  - apps/sync-server/**/*
+  - packages/collaboration/**/*
+
+execution-engine:
+  - apps/execution-engine/**/*
+
+core/config:
+  - turbo.json
+  - package.json
+  - package-lock.json
+  - .github/**/*

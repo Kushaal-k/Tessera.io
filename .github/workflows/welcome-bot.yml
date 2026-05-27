@@ -1,0 +1,24 @@
+name: Welcome Bot
+
+on:
+  pull_request_target:
+    types: [opened]
+
+permissions:
+  pull-requests: write
+
+jobs:
+  welcome:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/first-interaction@v1
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          pr-message: |
+            👋 Welcome to Tessera.io! Thank you for opening your first Pull Request!
+            
+            Before we can merge, please ensure:
+            - The Gatekeeper CI workflow passes.
+            - You've read through our `CONTRIBUTING.md`.
+            
+            A maintainer will review your code shortly. Happy coding!
