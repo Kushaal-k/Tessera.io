@@ -16,14 +16,14 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Build Execution Engine Docker Image
         run: |
           docker build -t tessera/execution-engine:ci apps/execution-engine
 
       - name: Run Trivy Vulnerability Scanner
-        uses: aquasecurity/trivy-action@v0.31.0
+        uses: aquasecurity/trivy-action@v0.36.0
         with:
           image-ref: 'tessera/execution-engine:ci'
           format: 'table'
