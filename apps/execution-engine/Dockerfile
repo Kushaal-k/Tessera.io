@@ -12,9 +12,10 @@ RUN apt-get update && apt-get install -y \
     python3-pip \
     && rm -rf /var/lib/apt/lists/*
 
-# Install Node.js v20 (LTS)
+# Install Node.js v20 (LTS) and update npm to latest to fix vulnerabilities
 RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
     && apt-get install -y nodejs \
+    && npm install -g npm@latest \
     && rm -rf /var/lib/apt/lists/*
 
 # Set up a non-root sandbox user for secure execution
