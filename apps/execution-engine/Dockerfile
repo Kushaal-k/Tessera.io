@@ -1,21 +1,14 @@
 # apps/execution-engine/Dockerfile
-FROM ubuntu:24.04
+FROM node:20-bookworm
 
 # Avoid tzdata interactive prompt during apt install
 ENV DEBIAN_FRONTEND=noninteractive
 
-# Install g++, python3, nodejs, and other essential tools
+# Install g++, python3, and other essential tools
 RUN apt-get update && apt-get install -y \
-    curl \
     g++ \
     python3 \
     python3-pip \
-    && rm -rf /var/lib/apt/lists/*
-
-# Install Node.js v20 (LTS) and update npm to latest to fix vulnerabilities
-RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
-    && apt-get install -y nodejs \
-    && npm install -g npm@latest \
     && rm -rf /var/lib/apt/lists/*
 
 # Set up a non-root sandbox user for secure execution

@@ -7,9 +7,9 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME_SYNC: ${{ github.repository }}-sync-server
-  IMAGE_NAME_ENGINE: ${{ github.repository }}-execution-worker
-  IMAGE_NAME_SANDBOX: ${{ github.repository }}-sandbox
+  IMAGE_NAME_SYNC: ${{ toLower(github.repository) }}-sync-server
+  IMAGE_NAME_ENGINE: ${{ toLower(github.repository) }}-execution-worker
+  IMAGE_NAME_SANDBOX: ${{ toLower(github.repository) }}-sandbox
 
 jobs:
   build-and-push:
