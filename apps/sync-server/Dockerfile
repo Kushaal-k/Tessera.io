@@ -1,9 +1,8 @@
 FROM node:20-alpine AS builder
 # Set working directory
 WORKDIR /app
-RUN npm install -g turbo
 COPY . .
-RUN turbo prune --scope=@tessera/sync-server --docker
+RUN npx turbo@2.9.16 prune --scope=@tessera/sync-server --docker
 
 FROM node:20-alpine AS installer
 WORKDIR /app
@@ -22,7 +21,6 @@ RUN npx turbo run build --filter=@tessera/sync-server...
 FROM node:20-alpine AS runner
 WORKDIR /app
 # Don't run production as root
-RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 syncserver
 USER syncserver
 COPY --from=installer /app/ .

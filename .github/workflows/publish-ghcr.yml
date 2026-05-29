@@ -7,9 +7,6 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME_SYNC: ${{ github.repository }}-sync-server
-  IMAGE_NAME_ENGINE: ${{ github.repository }}-execution-worker
-  IMAGE_NAME_SANDBOX: ${{ github.repository }}-sandbox
 
 jobs:
   build-and-push:
@@ -21,6 +18,12 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
+
+      - name: Set lowercased image names in env
+        run: |
+          echo "IMAGE_NAME_SYNC=${GITHUB_REPOSITORY,,}-sync-server" >> $GITHUB_ENV
+          echo "IMAGE_NAME_ENGINE=${GITHUB_REPOSITORY,,}-execution-worker" >> $GITHUB_ENV
+          echo "IMAGE_NAME_SANDBOX=${GITHUB_REPOSITORY,,}-sandbox" >> $GITHUB_ENV
 
       - name: Log in to the Container registry
         uses: docker/login-action@v4
