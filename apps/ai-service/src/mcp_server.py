@@ -6,7 +6,9 @@ mcp = FastMCP(settings.MCP_SERVER_NAME)
 
 
 @mcp.tool()
-async def search_codebase(query_vector: list[float], top_k: int = 5) -> list[dict[str, object]]:
+async def search_codebase(
+    query_vector: list[float], top_k: int = 5
+) -> list[dict[str, object]]:
     """Search the indexed codebase using vector similarity."""
     collection = get_collection()
 
