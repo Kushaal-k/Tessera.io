@@ -20,13 +20,13 @@
   },
   "dependencies": {
     "@tessera/shared-types": "*",
-    "yjs": "^13.6.0",
-    "y-protocols": "^1.0.6",
-    "lib0": "^0.2.99",
-    "socket.io-client": "^4.8.0"
+    "yjs": "^13.6.31",
+    "y-protocols": "^1.0.7",
+    "lib0": "^0.2.117",
+    "socket.io-client": "^4.8.3"
 
   },
   "devDependencies": {
-    "typescript": "^5.8.0"
+    "typescript": "^6.0.3"
   }
 }
