@@ -23,7 +23,7 @@ jobs:
           docker build -t tessera/execution-engine:ci apps/execution-engine
 
       - name: Run Trivy Vulnerability Scanner
-        uses: aquasecurity/trivy-action@master
+        uses: aquasecurity/trivy-action@v0.31.0
         with:
           image-ref: 'tessera/execution-engine:ci'
           format: 'table'
