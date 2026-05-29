@@ -53,6 +53,8 @@ Tessera.io/
 *Optional:*
 * **gVisor** (`runsc`) for enhanced kernel isolation in the execution engine.
 
+If the execution engine cannot reach Docker, hits WSL mount errors, or leaves behind interrupted sandbox containers, see the [Docker Sandbox Troubleshooting](docs/docker-sandbox-troubleshooting.md) guide.
+
 ### Quick Start
 
 1. **Clone the repository:**
