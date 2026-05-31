@@ -20,6 +20,7 @@ export function App() {
   const [language, setLanguage] = useState<SupportedLanguage>("typescript");
   const [isRunning, setIsRunning] = useState(false);
   const [output, setOutput] = useState<ExecutionResult | null>(null);
+  const [copyState, setCopyState] = useState<"idle" | "copied" | "error">("idle");
 
   const config = useMemo<SyncConnectionConfig>(
     () => ({
@@ -46,6 +47,18 @@ export function App() {
       socket.off("execution-result", handleExecutionResult);
     };
   }, [socket]);
+
+  const handleCopyCode = async () => {
+    if (!ytext) return;
+    try {
+      await navigator.clipboard.writeText(ytext.toString());
+      setCopyState("copied");
+      setTimeout(() => setCopyState("idle"), 2000);
+    } catch {
+      setCopyState("error");
+      setTimeout(() => setCopyState("idle"), 2000);
+    }
+  };
 
   const handleRunCode = () => {
     if (!socket || !ytext || isRunning) return;
@@ -81,6 +94,46 @@ export function App() {
               <option value="cpp">C++</option>
             </select>
           </div>
+
+          {/* Copy Code Button */}
+          <button
+            onClick={handleCopyCode}
+            disabled={!ytext}
+            title="Copy all code to clipboard"
+            className={`flex items-center gap-1.5 px-3 py-1 text-sm font-semibold rounded transition shadow-sm ${
+              !ytext
+                ? "bg-slate-800 text-slate-500 cursor-not-allowed"
+                : copyState === "copied"
+                ? "bg-emerald-700 text-emerald-200 cursor-default"
+                : copyState === "error"
+                ? "bg-rose-800 text-rose-300 cursor-default"
+                : "bg-slate-700 hover:bg-slate-600 text-slate-200 cursor-pointer active:scale-95"
+            }`}
+          >
+            {copyState === "copied" ? (
+              <>
+                <svg className="h-3.5 w-3.5" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2">
+                  <polyline points="2,8 6,12 14,4" />
+                </svg>
+                Copied!
+              </>
+            ) : copyState === "error" ? (
+              <>
+                <svg className="h-3.5 w-3.5" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2">
+                  <line x1="4" y1="4" x2="12" y2="12" /><line x1="12" y1="4" x2="4" y2="12" />
+                </svg>
+                Failed
+              </>
+            ) : (
+              <>
+                <svg className="h-3.5 w-3.5" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.75">
+                  <rect x="5" y="1" width="9" height="11" rx="1.5" />
+                  <rect x="2" y="4" width="9" height="11" rx="1.5" />
+                </svg>
+                Copy
+              </>
+            )}
+          </button>
 
           {/* Run Button */}
           <button
