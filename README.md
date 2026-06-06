@@ -61,9 +61,11 @@ If the execution engine cannot reach Docker, hits WSL mount errors, or leaves be
 
 1. **Clone the repository:**
 ```bash
-git clone git@github.com:<your-username>/Tessera.io.git
+git clone https://github.com/Kushaal-k/Tessera.io.git
 cd Tessera.io
 ```
+
+If you are contributing from a fork, replace the clone URL with your fork's SSH or HTTPS URL.
 
 2. **Install all workspace dependencies:**
 ```bash
@@ -163,12 +165,12 @@ pip install -r requirements.txt
 cd ..\..
 ```
 
-If `py -3.11` is unavailable, replace it with `python`. If PowerShell blocks virtual environment activation, run:
+If `py -3.11` is unavailable, replace it with `python`. If PowerShell blocks virtual environment activation, allow scripts for the current PowerShell session only:
 ```powershell
-Set-ExecutionPolicy -Scope CurrentUser RemoteSigned
+Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
 ```
 
-Then reopen PowerShell and run the activation command again.
+Then run the activation command again. This setting expires when the PowerShell window closes.
 
 4. **Start all services in development mode:**
 ```powershell
@@ -182,10 +184,15 @@ Run these checks from the repository root before opening a pull request:
 ```bash
 npm run typecheck
 npm run build
+```
+
+Then start the development stack as a manual smoke test:
+
+```bash
 npm run dev
 ```
 
-When `npm run dev` is running, confirm the local services use the expected defaults:
+This command stays running while the services are active. When it is running, confirm the local services use the expected defaults:
 
 * Redis is reachable on `localhost:6379`
 * MongoDB is reachable on `localhost:27017`
