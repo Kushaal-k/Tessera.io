@@ -1,4 +1,5 @@
 import { useMemo, useState, useEffect } from "react";
+import { SidePanel } from "@tessera/ui-components";
 import { CollaborativeEditor } from "./components/CollaborativeEditor.js";
 import {
   useCollaboration,
@@ -19,6 +20,7 @@ export function App() {
   const participant = useMemo(() => createDefaultParticipant(), []);
   const [language, setLanguage] = useState<SupportedLanguage>("typescript");
   const [isRunning, setIsRunning] = useState(false);
+  const [isAiPanelOpen, setIsAiPanelOpen] = useState(false);
   const [output, setOutput] = useState<ExecutionResult | null>(null);
 
   const config = useMemo<SyncConnectionConfig>(
@@ -109,6 +111,14 @@ export function App() {
             )}
           </button>
 
+          <button
+            type="button"
+            onClick={() => setIsAiPanelOpen(true)}
+            className="rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-3 py-1 text-sm font-semibold text-slate-200 transition hover:border-tessera-500 hover:text-white focus:outline-none focus:ring-2 focus:ring-tessera-500"
+          >
+            AI Panel
+          </button>
+
           {/* Connection Indicator */}
           <div className="flex items-center gap-2 border-l border-[var(--color-border)] pl-4">
             <span
@@ -183,6 +193,17 @@ export function App() {
           )}
         </div>
       </div>
+
+      <SidePanel
+        open={isAiPanelOpen}
+        title="AI Chat"
+        description={`Context: ${FILE_NAMES[language]}`}
+        onClose={() => setIsAiPanelOpen(false)}
+      >
+        <div className="rounded border border-dashed border-[var(--color-border)] bg-[var(--color-bg)] p-4 text-sm text-slate-400">
+          Ready for editor context.
+        </div>
+      </SidePanel>
     </div>
   );
 }
