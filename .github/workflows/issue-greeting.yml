@@ -2,7 +2,7 @@ name: Issue Greeting
 
 on:
   issues:
-    types: [opened]
+    types: [opened, labeled]
 
 permissions:
   issues: write
@@ -10,6 +10,7 @@ permissions:
 jobs:
   greet:
     name: Post contribution instructions
+    if: github.event.action == 'opened' || (github.event.action == 'labeled' && github.event.label.name == 'trigger-bot')
     runs-on: ubuntu-latest
 
     steps:
