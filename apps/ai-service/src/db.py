@@ -1,9 +1,19 @@
 from time import perf_counter
+import logging
 
 from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorCollection
+from pymongo import ASCENDING
+from pymongo.errors import CollectionInvalid, OperationFailure
+from pymongo.operations import SearchIndexModel
+
 from .config import settings
 
 _client: AsyncIOMotorClient | None = None  # type: ignore[type-arg]
+_logger = logging.getLogger(__name__)
+
+VECTOR_SEARCH_INDEX_NAME = "vector_index"
+FILE_PATH_INDEX_NAME = "file_path_idx"
+FILE_PATH_CHUNK_INDEX_NAME = "file_path_chunk_index_idx"
 
 
 async def connect_db() -> None:
@@ -58,3 +68,79 @@ async def check_connection() -> dict[str, object]:
     status["connected"] = True
     status["latency_ms"] = round((perf_counter() - start) * 1000, 2)
     return status
+
+
+async def ensure_collection_indexes() -> None:
+    if _client is None:
+        raise RuntimeError("Database not connected. Call connect_db() first.")
+
+    db = _client[settings.MONGODB_DB_NAME]
+
+    if settings.MONGODB_COLLECTION not in await db.list_collection_names():
+        try:
+            await db.create_collection(settings.MONGODB_COLLECTION)
+        except CollectionInvalid:
+            # Another startup worker may have created the collection first.
+            pass
+
+    collection = db[settings.MONGODB_COLLECTION]
+    await collection.create_index(
+        [("file_path", ASCENDING)],
+        name=FILE_PATH_INDEX_NAME,
+        background=True,
+    )
+    await collection.create_index(
+        [("file_path", ASCENDING), ("chunk_index", ASCENDING)],
+        name=FILE_PATH_CHUNK_INDEX_NAME,
+        background=True,
+    )
+    await _ensure_vector_search_index(collection)
+
+
+async def _ensure_vector_search_index(
+    collection: AsyncIOMotorCollection,  # type: ignore[type-arg]
+) -> None:
+    if await _has_vector_search_index(collection):
+        return
+
+    index_model = SearchIndexModel(
+        definition={
+            "fields": [
+                {
+                    "type": "vector",
+                    "path": "embedding",
+                    "numDimensions": settings.EMBEDDING_DIMENSIONS,
+                    "similarity": "cosine",
+                }
+            ]
+        },
+        name=VECTOR_SEARCH_INDEX_NAME,
+        type="vectorSearch",
+    )
+
+    try:
+        await collection.create_search_index(model=index_model)
+    except (AttributeError, OperationFailure) as exc:
+        _logger.warning(
+            "Skipping MongoDB vector search index creation for %s: %s",
+            settings.MONGODB_COLLECTION,
+            exc,
+        )
+
+
+async def _has_vector_search_index(
+    collection: AsyncIOMotorCollection,  # type: ignore[type-arg]
+) -> bool:
+    try:
+        async for index in collection.list_search_indexes():
+            if index.get("name") == VECTOR_SEARCH_INDEX_NAME:
+                return True
+    except (AttributeError, OperationFailure) as exc:
+        _logger.warning(
+            "Skipping MongoDB search index inspection for %s: %s",
+            settings.MONGODB_COLLECTION,
+            exc,
+        )
+        return True
+
+    return False
