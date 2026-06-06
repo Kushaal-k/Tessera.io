@@ -14,6 +14,14 @@ _logger = logging.getLogger(__name__)
 VECTOR_SEARCH_INDEX_NAME = "vector_index"
 FILE_PATH_INDEX_NAME = "file_path_idx"
 FILE_PATH_CHUNK_INDEX_NAME = "file_path_chunk_index_idx"
+_DUPLICATE_INDEX_ERROR_CODES = {68, 85, 86, 11000}
+_DUPLICATE_INDEX_ERROR_MARKERS = (
+    "already exists",
+    "duplicate",
+    "IndexAlreadyExists",
+    "IndexKeySpecsConflict",
+    "IndexOptionsConflict",
+)
 
 
 async def connect_db() -> None:
@@ -76,23 +84,20 @@ async def ensure_collection_indexes() -> None:
 
     db = _client[settings.MONGODB_DB_NAME]
 
-    if settings.MONGODB_COLLECTION not in await db.list_collection_names():
-        try:
-            await db.create_collection(settings.MONGODB_COLLECTION)
-        except CollectionInvalid:
-            # Another startup worker may have created the collection first.
-            pass
+    try:
+        await db.create_collection(settings.MONGODB_COLLECTION)
+    except CollectionInvalid:
+        # The collection already exists, or another startup worker created it.
+        pass
 
     collection = db[settings.MONGODB_COLLECTION]
     await collection.create_index(
         [("file_path", ASCENDING)],
         name=FILE_PATH_INDEX_NAME,
-        background=True,
     )
     await collection.create_index(
         [("file_path", ASCENDING), ("chunk_index", ASCENDING)],
         name=FILE_PATH_CHUNK_INDEX_NAME,
-        background=True,
     )
     await _ensure_vector_search_index(collection)
 
@@ -120,7 +125,15 @@ async def _ensure_vector_search_index(
 
     try:
         await collection.create_search_index(model=index_model)
-    except (AttributeError, OperationFailure) as exc:
+    except AttributeError as exc:
+        _logger.warning(
+            "Skipping MongoDB vector search index creation for %s: %s",
+            settings.MONGODB_COLLECTION,
+            exc,
+        )
+    except OperationFailure as exc:
+        if _is_duplicate_index_error(exc):
+            return
         _logger.warning(
             "Skipping MongoDB vector search index creation for %s: %s",
             settings.MONGODB_COLLECTION,
@@ -144,3 +157,11 @@ async def _has_vector_search_index(
         return True
 
     return False
+
+
+def _is_duplicate_index_error(exc: OperationFailure) -> bool:
+    if exc.code in _DUPLICATE_INDEX_ERROR_CODES:
+        return True
+
+    error_text = str(exc)
+    return any(marker in error_text for marker in _DUPLICATE_INDEX_ERROR_MARKERS)
