@@ -59,6 +59,18 @@ export function App() {
     });
   };
 
+  const handleDownload = () => {
+    if (!ytext) return;
+    const content = ytext.toString();
+    const fileName = FILE_NAMES[language];
+    const blob = new Blob([content], { type: "text/plain" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = fileName;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
   return (
     <div className="flex h-screen flex-col bg-[var(--color-bg)]">
       {/* Header */}
@@ -142,6 +154,17 @@ export function App() {
             <div className="rounded px-2 py-1 text-sm font-medium text-tessera-400 bg-tessera-500/10 border border-tessera-500/20">
               📄 {FILE_NAMES[language]}
             </div>
+            <button
+              onClick={handleDownload}
+              disabled={!ytext}
+              className="mt-2 flex items-center gap-1.5 px-2 py-1 text-xs font-medium text-slate-400 hover:text-white hover:bg-[var(--color-bg)] rounded transition w-full"
+              title="Download file"
+            >
+              <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+              </svg>
+              Download
+            </button>
           </div>
         </aside>
 
@@ -150,7 +173,11 @@ export function App() {
           {ytext && awareness ? (
             <CollaborativeEditor ytext={ytext} awareness={awareness} language={language} />
           ) : (
-            <div className="flex h-full items-center justify-center text-slate-500 font-medium bg-[var(--color-bg)]">
+            <div className="flex h-full flex-col items-center justify-center gap-3 text-slate-500 font-medium bg-[var(--color-bg)]">
+              <svg className="animate-spin h-8 w-8 text-tessera-400" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+              </svg>
               Connecting to collaboration server…
             </div>
           )}
