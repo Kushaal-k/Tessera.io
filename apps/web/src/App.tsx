@@ -62,9 +62,7 @@ export function App() {
       } else {
         isMac = navigator.userAgent.toLowerCase().includes("mac");
       }
-
       const isExecutionShortcut = isMac ? event.metaKey : event.ctrlKey;
-
       if (isExecutionShortcut && event.key === "Enter") {
         event.preventDefault();
         if (!isRunning && connected) {
