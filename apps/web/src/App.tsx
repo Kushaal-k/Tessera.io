@@ -54,6 +54,29 @@ export function App() {
     };
   }, [socket]);
 
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      let isMac = false;
+      if ("userAgentData" in navigator && navigator.userAgentData) {
+        isMac = (navigator.userAgentData as any).platform.toLowerCase() === "macos";
+      } else {
+        isMac = navigator.userAgent.toLowerCase().includes("mac");
+      }
+
+      const isExecutionShortcut = isMac ? event.metaKey : event.ctrlKey;
+
+      if (isExecutionShortcut && event.key === "Enter") {
+        event.preventDefault();
+        if (!isRunning && connected) {
+          handleRunCode();
+        }
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [socket, ytext, isRunning, connected]);
+
   const handleRunCode = () => {
     if (!socket || !ytext || isRunning) return;
     setIsRunning(true);
@@ -99,6 +122,13 @@ export function App() {
           <button
             onClick={handleRunCode}
             disabled={!connected || isRunning}
+            title={`Run code (${
+              "userAgentData" in navigator && (navigator.userAgentData as any).platform.toLowerCase() === "macos"
+                ? "Cmd"
+                : navigator.userAgent.toLowerCase().includes("mac")
+                ? "Cmd"
+                : "Ctrl"
+            }+Enter)`}
             className={`flex items-center gap-1.5 px-3 py-1 text-sm font-semibold rounded transition shadow-sm ${
               isRunning
                 ? "bg-slate-700 text-slate-400 cursor-not-allowed"
