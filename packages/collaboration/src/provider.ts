@@ -52,6 +52,20 @@ export class TesseraSocketProvider {
     this.socket.off("awareness-update", this.handleAwarenessRemoteUpdate);
   }
 
+  /**
+ * Deletes all content from the shared Monaco text in a single atomic
+ * Yjs transaction, propagating the deletion to all synced clients via
+ * the existing sync-update socket pipeline.
+ */
+  clearLocalDoc(): void {
+    if (this.destroyed) return;
+    const ytext = this.ydoc.getText("monaco");
+    if (ytext.length === 0) return;
+    this.ydoc.transact(() => {
+      ytext.delete(0, ytext.length);
+    });
+  }
+
   private sendSyncStep1(): void {
     const stateVector = Y.encodeStateVector(this.ydoc);
     this.socket.emit("sync-step-1", stateVector);
