@@ -249,7 +249,7 @@ export function App() {
                 Duration: {output.durationMs}ms
               </span>
               {output.exitCode !== null && (
-                <span className="text-slate-400">
+                <span className={output.exitCode === 0 ? "text-emerald-400" : "text-rose-400"}>
                   Exit Code: {output.exitCode}
                 </span>
               )}
