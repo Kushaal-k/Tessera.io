@@ -122,6 +122,16 @@ export function App() {
               </>
             )}
           </button>
+          {/* Download Button */}
+          <button
+            onClick={handleDownload}
+            disabled={!ytext}
+            className="flex items-center justify-center p-1.5 text-slate-400 hover:text-white hover:bg-[var(--color-bg)] rounded transition"
+            title={`Download ${FILE_NAMES[language]}`}>
+            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+            </svg>
+          </button>
 
           <button
             type="button"
@@ -154,17 +164,6 @@ export function App() {
             <div className="rounded px-2 py-1 text-sm font-medium text-tessera-400 bg-tessera-500/10 border border-tessera-500/20">
               📄 {FILE_NAMES[language]}
             </div>
-            <button
-              onClick={handleDownload}
-              disabled={!ytext}
-              className="mt-2 flex items-center gap-1.5 px-2 py-1 text-xs font-medium text-slate-400 hover:text-white hover:bg-[var(--color-bg)] rounded transition w-full"
-              title="Download file"
-            >
-              <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-              </svg>
-              Download
-            </button>
           </div>
         </aside>
 
