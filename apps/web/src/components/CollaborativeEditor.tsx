@@ -11,6 +11,7 @@ interface CollaborativeEditorProps {
   readonly awareness: Awareness;
   readonly language?: SupportedLanguage;
   readonly showMinimap?: boolean;
+  readonly fontSize?: number;
 }
 
 const LANGUAGE_MAP: Record<SupportedLanguage, string> = {
@@ -25,6 +26,7 @@ export function CollaborativeEditor({
   awareness,
   language = "typescript",
   showMinimap = true,
+  fontSize = 14,
 }: CollaborativeEditorProps) {
   const editorRef = useRef<editor.IStandaloneCodeEditor | null>(null);
   const bindingRef = useRef<MonacoBinding | null>(null);
@@ -61,6 +63,12 @@ export function CollaborativeEditor({
     }
   }, [showMinimap]);
 
+  useEffect(() => {
+    if (editorRef.current) {
+      editorRef.current.updateOptions({ fontSize });
+    }
+  }, [fontSize]);
+
   return (
     <Editor
       height="100%"
@@ -69,7 +77,7 @@ export function CollaborativeEditor({
       onMount={handleEditorMount}
       options={{
         minimap: { enabled: showMinimap },
-        fontSize: 14,
+        fontSize,
         fontFamily: "'JetBrains Mono', 'Fira Code', monospace",
         lineNumbers: "on",
         renderWhitespace: "selection",
