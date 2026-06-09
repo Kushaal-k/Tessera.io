@@ -1,4 +1,4 @@
-# Contributing to Tessera.io
+ # Contributing to Tessera.io
 
 First off, thank you for considering contributing to Tessera.io! It's people like you that make this tool such a great collaborative sandbox.
 
