@@ -1,4 +1,5 @@
 """Embedding service for converting text queries to vector representations."""
+
 from .config import settings
 
 
