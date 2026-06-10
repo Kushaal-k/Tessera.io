@@ -6,6 +6,7 @@ import {
   createDefaultParticipant,
 } from "./hooks/useCollaboration.js";
 import type { SyncConnectionConfig, SupportedLanguage, ExecutionResult } from "@tessera/shared-types";
+import { downloadTextFile } from "./utils/downloadUtils.js";
 
 const SYNC_SERVER_URL = "http://localhost:4000";
 const DEFAULT_ROOM = "default-room";
@@ -61,15 +62,7 @@ export function App() {
 
   const handleDownload = () => {
     if (!ytext) return;
-    const content = ytext.toString();
-    const fileName = FILE_NAMES[language];
-    const blob = new Blob([content], { type: "text/plain" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = fileName;
-    a.click();
-    URL.revokeObjectURL(url);
+    downloadTextFile(ytext.toString(), FILE_NAMES[language]);
   };
   return (
     <div className="flex h-screen flex-col bg-[var(--color-bg)]">
