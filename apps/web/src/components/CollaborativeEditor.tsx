@@ -35,6 +35,11 @@ export function CollaborativeEditor({
       const model = mountedEditor.getModel();
       if (!model) return;
 
+      // Clean up previous binding if it exists before initializing a new one
+      if (bindingRef.current) {
+        bindingRef.current.destroy();
+      }
+
       bindingRef.current = new MonacoBinding(
         ytext,
         model,
@@ -45,10 +50,17 @@ export function CollaborativeEditor({
     [ytext, awareness],
   );
 
+  // Clean up both the Monaco Binding and the editor instance on unmount to prevent memory leaks
   useEffect(() => {
     return () => {
-      bindingRef.current?.destroy();
-      bindingRef.current = null;
+      if (bindingRef.current) {
+        bindingRef.current.destroy();
+        bindingRef.current = null;
+      }
+      if (editorRef.current) {
+        editorRef.current.dispose();
+        editorRef.current = null;
+      }
     };
   }, []);
 
