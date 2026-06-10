@@ -42,6 +42,39 @@ async function ensureImageExists(image: string): Promise<void> {
   }
 }
 
+function demuxDockerLogs(logs: Buffer | string): { stdout: string; stderr: string } {
+  const buffer = typeof logs === "string" ? Buffer.from(logs, "binary") : logs;
+  let stdout = "";
+  let stderr = "";
+  let offset = 0;
+
+  while (offset < buffer.length) {
+    if (offset + 8 > buffer.length) {
+      break;
+    }
+    const type = buffer.readUInt8(offset);
+    const size = buffer.readUInt32BE(offset + 4);
+    offset += 8;
+
+    if (offset + size > buffer.length) {
+      const chunk = buffer.toString("utf8", offset, buffer.length);
+      if (type === 1) stdout += chunk;
+      else if (type === 2) stderr += chunk;
+      break;
+    }
+
+    const chunk = buffer.toString("utf8", offset, offset + size);
+    if (type === 1) {
+      stdout += chunk;
+    } else if (type === 2) {
+      stderr += chunk;
+    }
+    offset += size;
+  }
+
+  return { stdout, stderr };
+}
+
 export async function executeInSandbox(task: ExecutionTask): Promise<ExecutionResult> {
   const startTime = performance.now();
   const config: SandboxConfig = { ...DEFAULT_SANDBOX_CONFIG, runtime: detectRuntime() };
@@ -89,7 +122,7 @@ export async function executeInSandbox(task: ExecutionTask): Promise<ExecutionRe
     }
 
     const logs = await container.logs({ stdout: true, stderr: true, follow: false });
-    const logOutput = typeof logs === "string" ? logs : logs.toString("utf-8");
+    const { stdout, stderr } = demuxDockerLogs(logs as unknown as Buffer | string);
 
     const inspectInfo = await container.inspect();
     const exitCode = inspectInfo.State.ExitCode as number;
@@ -97,8 +130,8 @@ export async function executeInSandbox(task: ExecutionTask): Promise<ExecutionRe
     return {
       taskId: task.id,
       status: exitCode === 0 ? "completed" : "failed",
-      stdout: logOutput,
-      stderr: "",
+      stdout,
+      stderr,
       exitCode,
       durationMs: performance.now() - startTime,
     };
@@ -118,3 +151,4 @@ export async function executeInSandbox(task: ExecutionTask): Promise<ExecutionRe
     }
   }
 }
+
