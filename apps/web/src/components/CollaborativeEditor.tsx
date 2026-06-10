@@ -5,6 +5,7 @@ import type * as Y from "yjs";
 import type { Awareness } from "y-protocols/awareness";
 import type { editor } from "monaco-editor";
 import type { SupportedLanguage } from "@tessera/shared-types";
+import { registerCppIntellisense } from "../intellisense/cpp"; // ← ADD
 
 interface CollaborativeEditorProps {
   readonly ytext: Y.Text;
@@ -27,11 +28,13 @@ export function CollaborativeEditor({
   const bindingRef = useRef<MonacoBinding | null>(null);
 
   const handleEditorMount: OnMount = useCallback(
-    (mountedEditor) => {
+    (mountedEditor, monaco) => { // ← ADD monaco param
       editorRef.current = mountedEditor;
 
       const model = mountedEditor.getModel();
       if (!model) return;
+
+      registerCppIntellisense(monaco); // ← ADD
 
       bindingRef.current = new MonacoBinding(
         ytext,
