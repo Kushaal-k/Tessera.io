@@ -14,6 +14,7 @@ class Settings(BaseSettings):
     # /health probe) instead of waiting out Motor's 30s default.
     MONGODB_TIMEOUT_MS: int = 3000
     EMBEDDING_DIMENSIONS: int = 1536
+    EMBEDDING_MODEL: str = "sentence-transformers/all-MiniLM-L6-v2"
     MCP_SERVER_NAME: str = "tessera-ai"
 
     model_config = {"env_prefix": "TESSERA_", "env_file": ".env"}
