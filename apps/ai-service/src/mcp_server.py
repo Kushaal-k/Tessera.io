@@ -8,9 +8,7 @@ embedding_service = EmbeddingService()
 
 
 @mcp.tool()
-async def search_codebase(
-    query: str, top_k: int = 5
-) -> list[dict[str, object]]:
+async def search_codebase(query: str, top_k: int = 5) -> list[dict[str, object]]:
     """Search the indexed codebase for code similar to the given query."""
     query_vector = await embedding_service.embed_query(query)
     collection = get_collection()
