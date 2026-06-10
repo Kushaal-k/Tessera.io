@@ -15,6 +15,7 @@ const FILE_NAMES: Record<SupportedLanguage, string> = {
   typescript: "main.ts",
   python: "main.py",
   cpp: "main.cpp",
+  java: "Main.java",
 };
 
 export function App() {
@@ -87,6 +88,7 @@ export function App() {
               <option value="typescript">TypeScript</option>
               <option value="python">Python</option>
               <option value="cpp">C++</option>
+              <option value="java">Java</option>
             </select>
           </div>
 

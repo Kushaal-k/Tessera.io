@@ -7,12 +7,14 @@ const LANGUAGE_IMAGES: Record<SupportedLanguage, string> = {
   typescript: "node:20-slim",
   python: "python:3.12-slim",
   cpp: "gcc:14",
+  java: "openjdk:17-slim"
 };
 
 const LANGUAGE_COMMANDS: Record<SupportedLanguage, (code: string) => string[]> = {
   typescript: (code) => ["node", "--input-type=module", "-e", code],
   python: (code) => ["python3", "-c", code],
   cpp: (code) => ["sh", "-c", `echo '${code.replace(/'/g, "'\\''")}' > /tmp/main.cpp && g++ -o /tmp/main /tmp/main.cpp && /tmp/main`],
+  java: (code) => ["sh", "-c", `echo '${code.replace(/'/g, "'\\''")}' > /tmp/Main.java && javac /tmp/Main.java && java -cp /tmp Main`],
 };
 
 const DEFAULT_SANDBOX_CONFIG: SandboxConfig = {
