@@ -21,6 +21,20 @@ The current repository is the foundational MVP. We have established the core plu
 
 ---
 
+## 🌐 Supported Languages
+
+Tessera.io currently supports the following languages in the collaborative editor:
+
+| Language   | Monaco Mapping | Execution Sandbox | IntelliSense |
+|------------|---------------|-------------------|--------------|
+| TypeScript | `typescript`  | ✅ Supported      | ✅ Built-in  |
+| Python     | `python`      | ✅ Supported      | 🔧 In Progress |
+| C++        | `cpp`         | ✅ Supported      | 🔧 In Progress |
+
+> Want to add a new language? See the [Adding a New Language](CONTRIBUTING.md#adding-a-new-language) guide.
+
+---
+
 ## 🏗️ Architecture & Monorepo Structure
 
 Tessera.io uses a strict **Turborepo** monorepo via npm workspaces. This modular design allows open-source contributors to work on the exact layer they specialize in without needing to understand the entire stack.

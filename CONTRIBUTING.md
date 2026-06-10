@@ -1,4 +1,4 @@
- # Contributing to Tessera.io
+# Contributing to Tessera.io
 
 First off, thank you for considering contributing to Tessera.io! It's people like you that make this tool such a great collaborative sandbox.
 
@@ -14,8 +14,6 @@ If you find a new bug or have a feature proposal, please open an issue using our
 ---
 
 ## How to Contribute
-
-To ensure a smooth workflow and high code quality, we ask all contributors to follow these steps:
 
 ### 1. Claim an Issue
 
@@ -99,6 +97,24 @@ If your Pull Request includes UI-related changes, please include one of the foll
 * A short GIF/video demonstrating the change and relevant interactions.
 
 Providing visual evidence helps reviewers understand, verify, and test UI improvements more efficiently.
+
+---
+
+## Adding a New Language
+
+To add support for a new language in Tessera.io, follow these steps:
+
+### 1. Shared Types
+Add the new language to `SupportedLanguage` in `packages/shared-types/`.
+
+### 2. Execution Sandbox
+Add a new Docker sandbox container for the language in `apps/execution-engine/`.
+
+### 3. Monaco Editor Mapping
+Map the language to its Monaco editor identifier in `apps/web/src/App.tsx`.
+
+### 4. IntelliSense (Optional)
+Add an IntelliSense completion provider in `apps/web/src/` following the existing provider patterns in the codebase.
 
 ---
 
