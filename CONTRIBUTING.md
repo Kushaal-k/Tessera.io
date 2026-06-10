@@ -4,7 +4,7 @@ First off, thank you for considering contributing to Tessera.io! It's people lik
 
 ## Reporting Issues
 
-Before opening a new issue, please search the existing issues to see if the problem or feature request has already been discussed. 
+Before opening a new issue, please search the existing issues to see if the problem or feature request has already been discussed.
 
 If you find a new bug or have a feature proposal, please open an issue using our interactive templates:
 - **🐛 Bug Reports:** Choose this template to report crashes, unexpected behavior, or security issues. Please include reproduction steps, expected behavior, and system environment info.
@@ -14,48 +14,67 @@ If you find a new bug or have a feature proposal, please open an issue using our
 
 ## How to Contribute
 
-To ensure a smooth workflow and high code quality, we ask all contributors to follow these steps:
-
 ### 1. Claim an Issue
 - Find an open issue you'd like to work on. We recommend checking out our [good first issues](https://github.com/Kushaal-k/Tessera.io/issues?q=is%3Aopen+is%3Aissue+label%3A%22good+first+issue%22).
-- Comment `/claim` directly on the issue. Our auto-claim bot will automatically verify that the issue is unassigned, assign it to you, and post a welcoming confirmation comment!
+- Comment `/claim` directly on the issue.
 
 ### 2. Star & Fork the Repository
 - **Star the repo:** Show your support by starring the main Tessera.io repository!
-- **Fork it:** Click the "Fork" button at the top right of the repository page to create your own copy.
+- **Fork it:** Click the "Fork" button at the top right of the repository page.
 - **Clone your fork:**
-  ```bash
+```bash
   git clone git@github.com:<your-username>/Tessera.io.git
   cd Tessera.io
-  ```
+```
 
 ### 3. Branching
-Create a new branch for your feature or bug fix:
 ```bash
 git checkout -b feature/your-feature-name
 ```
 
 ### 4. Making Changes
-Make your changes in the relevant workspace(s) as described in the `README.md`. Ensure that your code follows the strict TypeScript guidelines of this repository.
-
-Test your changes locally by running:
+Test your changes locally:
 ```bash
 npm run typecheck
 npm run build
 npm run dev
 ```
 
-### 5. Committing Your Changes (Sign-offs Required)
-**IMPORTANT:** We require all commits to be signed off. The sign-off is a simple line at the end of the commit message which certifies that you wrote it or otherwise have the right to pass it on as an open-source patch. 
-
-Use the `-s` or `--signoff` flag when you commit your changes:
+### 5. Committing Your Changes
 ```bash
-git commit -s -m "feat: your descriptive commit message"
+git commit -m "feat: your descriptive commit message"
 ```
-This will automatically append `Signed-off-by: Your Name <your.email@example.com>` to your commit message. If you do not sign off your commits, our CI pipeline will reject the pull request.
 
 ### 6. Submit a Pull Request
-Once you've pushed your signed-off commits to your fork, head over to the main repository and open a Pull Request. Provide a clear description of the problem you're solving and the changes you've made.
+Provide a clear description of the problem you're solving and the changes you've made.
+
+---
+
+## Adding a New Language
+
+To add support for a new language in Tessera.io, follow these steps:
+
+### 1. Shared Types
+Add the new language to `SupportedLanguage` in `packages/shared-types/`.
+
+### 2. Execution Sandbox
+Add a new Docker sandbox container for the language in `apps/execution-engine/`.
+
+### 3. Monaco Editor Mapping
+Map the language to its Monaco editor identifier in `apps/web/src/App.tsx`.
+
+### 4. IntelliSense (Optional)
+Add an IntelliSense completion provider in `apps/web/src/` following the existing provider patterns in the codebase.
+
+---
+
+## UI Changes
+
+If your pull request includes UI changes, please include at least one of the following:
+- A **screenshot** of the updated UI
+- A short **GIF or video** demonstrating the change and relevant interactions
+
+This helps maintainers review and verify visual changes more efficiently.
 
 ---
 
