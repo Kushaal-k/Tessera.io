@@ -93,17 +93,26 @@ python3 --version
 ```
 
 2. **Start Docker if it is not already running:**
+
+On systemd-based Linux distributions:
 ```bash
 sudo systemctl start docker
 ```
 
+On non-systemd distributions or WSL setups that use the Docker service script:
+```bash
+sudo service docker start
+```
+
+If neither command applies, follow your distribution's Docker startup instructions.
+
 3. **Start infrastructure services (Redis and MongoDB):**
 ```bash
 # Start Redis (if not already running)
-docker run -d --name tessera-redis -p 6379:6379 redis:7-alpine
+docker run -d --name tessera-redis -p 127.0.0.1:6379:6379 redis:7-alpine
 
 # Start MongoDB (if not already running)
-docker run -d --name tessera-mongo -p 27017:27017 mongo:7
+docker run -d --name tessera-mongo -p 127.0.0.1:27017:27017 mongo:7
 ```
 
 If a container with the same name already exists, start it instead:
@@ -145,10 +154,10 @@ python --version
 2. **Start infrastructure services (Redis and MongoDB):**
 ```powershell
 # Start Redis (if not already running)
-docker run -d --name tessera-redis -p 6379:6379 redis:7-alpine
+docker run -d --name tessera-redis -p 127.0.0.1:6379:6379 redis:7-alpine
 
 # Start MongoDB (if not already running)
-docker run -d --name tessera-mongo -p 27017:27017 mongo:7
+docker run -d --name tessera-mongo -p 127.0.0.1:27017:27017 mongo:7
 ```
 
 If a container with the same name already exists, start it instead:
@@ -179,7 +188,7 @@ npm run dev
 
 ### Verify your setup
 
-Run these checks from the repository root before opening a pull request:
+Run these checks from the repository root before opening a pull request. The same commands work in Bash, PowerShell, or CMD:
 
 ```bash
 npm run typecheck
