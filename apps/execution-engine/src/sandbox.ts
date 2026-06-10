@@ -8,6 +8,7 @@ const LANGUAGE_IMAGES: Record<SupportedLanguage, string> = {
   python: "python:3.12-slim",
   cpp: "gcc:14",
   java: "openjdk:17-slim"
+  rust: "rust:1.75-slim",
 };
 
 const LANGUAGE_COMMANDS: Record<SupportedLanguage, (code: string) => string[]> = {
@@ -15,6 +16,7 @@ const LANGUAGE_COMMANDS: Record<SupportedLanguage, (code: string) => string[]> =
   python: (code) => ["python3", "-c", code],
   cpp: (code) => ["sh", "-c", `echo '${code.replace(/'/g, "'\\''")}' > /tmp/main.cpp && g++ -o /tmp/main /tmp/main.cpp && /tmp/main`],
   java: (code) => ["sh", "-c", `echo '${code.replace(/'/g, "'\\''")}' > /tmp/Main.java && javac /tmp/Main.java && java -cp /tmp Main`],
+  rust: (code) => ["sh", "-c", `echo '${code.replace(/'/g, "'\\''")}' > /tmp/main.rs && rustc /tmp/main.rs -o /tmp/main && /tmp/main`],
 };
 
 const DEFAULT_SANDBOX_CONFIG: SandboxConfig = {
