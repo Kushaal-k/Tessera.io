@@ -70,7 +70,6 @@ export async function executeInSandbox(task: ExecutionTask): Promise<ExecutionRe
       NetworkDisabled: config.networkDisabled,
       StopTimeout: Math.ceil(task.timeoutMs / 1000),
     });
-    console.log(`[sandbox] container created: ${container.id} | language: ${task.language} | taskId: ${task.id}`);
 
     if (task.language === "cpp" || task.language === "java") {
       const filename = task.language === "cpp" ? "main.cpp" : "Main.java";
@@ -92,7 +91,6 @@ export async function executeInSandbox(task: ExecutionTask): Promise<ExecutionRe
 
     await container.start();
 
-    console.log(`[sandbox] container started: ${container.id} | timeout: ${task.timeoutMs}ms`);
     const timeoutPromise = new Promise<"timeout">((resolve) => {
       timerId = setTimeout(() => resolve("timeout"), task.timeoutMs);
     });
@@ -105,7 +103,6 @@ export async function executeInSandbox(task: ExecutionTask): Promise<ExecutionRe
     }
 
     if (race === "timeout") {
-      console.log(`[sandbox] container timed out: ${container.id} | taskId: ${task.id}`);
       try { await container.stop({ t: 1 }); } catch { /* already stopped */ }
       return {
         taskId: task.id,
@@ -122,7 +119,6 @@ export async function executeInSandbox(task: ExecutionTask): Promise<ExecutionRe
 
     const inspectInfo = await container.inspect();
     const exitCode = inspectInfo.State.ExitCode as number;
-    console.log(`[sandbox] container completed: ${container.id} | exitCode: ${exitCode} | duration: ${(performance.now() - startTime).toFixed(2)}ms`);
 
     return {
       taskId: task.id,
@@ -147,11 +143,7 @@ export async function executeInSandbox(task: ExecutionTask): Promise<ExecutionRe
     };
   } finally {
     if (container) {
-      try {
-        console.log(`[sandbox] removing container: ${container.id}`);
-        await container.remove({ force: true });
-        console.log(`[sandbox] container removed: ${container.id}`);
-      } catch { /* already removed */ }
+      try { await container.remove({ force: true }); } catch { /* already removed */ }
     }
   }
 }
