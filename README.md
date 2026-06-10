@@ -46,11 +46,11 @@ Tessera.io/
 
 Before starting, install the tools for your operating system:
 
-* **Node.js** >= 20.0.0 and **npm** >= 10.0.0
+* **Node.js** ≥ 20.0.0 and **npm** ≥ 10.0.0
 * **Docker** or **Docker Desktop** (for the execution engine)
 * **Redis** (for BullMQ task queues; a Docker container is fine)
 * **MongoDB** (for AI service RAG storage; a Docker container is fine)
-* **Python** >= 3.11 (for the AI microservice)
+* **Python** ≥ 3.11 (for the AI microservice)
 
 *Optional:*
 * **gVisor** (`runsc`) for enhanced kernel isolation in the execution engine.
@@ -65,7 +65,7 @@ git clone https://github.com/Kushaal-k/Tessera.io.git
 cd Tessera.io
 ```
 
-If you are contributing from a fork, replace the clone URL with your fork's SSH or HTTPS URL.
+The README defaults to HTTPS because it works without SSH key setup. If you prefer SSH and have keys configured, use `git clone git@github.com:Kushaal-k/Tessera.io.git` instead. If you are contributing from a fork, replace the clone URL with your fork's SSH or HTTPS URL.
 
 2. **Install all workspace dependencies:**
 ```bash
@@ -190,7 +190,7 @@ npm run dev
 
 Run these checks from the repository root before opening a pull request. The same commands work in Bash, PowerShell, or CMD:
 
-```bash
+```text
 npm run typecheck
 npm run build
 ```
