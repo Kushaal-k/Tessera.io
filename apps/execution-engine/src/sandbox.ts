@@ -12,35 +12,20 @@ const LANGUAGE_IMAGES: Record<SupportedLanguage, string> = {
   typescript: "node:20-slim",
   python: "python:3.12-slim",
   cpp: "gcc:14",
-  java: "openjdk:17-slim",
+  java: "eclipse-temurin:21-jdk-alpine",
   rust: "rust:1.75-slim",
 };
 
 const LANGUAGE_COMMANDS: Record<
   SupportedLanguage,
-  (code: string) => string[]
+  (code: string) => string[] 
 > = {
   typescript: (code) => ["node", "--input-type=module", "-e", code],
 
   python: (code) => ["python3", "-c", code],
-
-  cpp: (code) => [
-    "sh",
-    "-c",
-    `echo '${code.replace(/'/g, "'\\''")}' > /tmp/main.cpp && g++ -o /tmp/main /tmp/main.cpp && /tmp/main`,
-  ],
-
-  java: (code) => [
-    "sh",
-    "-c",
-    `echo '${code.replace(/'/g, "'\\''")}' > /tmp/Main.java && javac /tmp/Main.java && java -cp /tmp Main`,
-  ],
-
-  rust: (code) => [
-    "sh",
-    "-c",
-    `echo '${code.replace(/'/g, "'\\''")}' > /tmp/main.rs && rustc /tmp/main.rs -o /tmp/main && /tmp/main`,
-  ],
+  cpp: (code) => ["sh", "-c", `echo '${code.replace(/'/g, "'\\''")}' > /tmp/main.cpp && g++ -o /tmp/main /tmp/main.cpp && /tmp/main`],
+  java: (code) => ["sh", "-c", `echo '${code.replace(/'/g, "'\\''")}' > /tmp/Main.java && javac /tmp/Main.java -d /tmp && java -cp /tmp Main`],
+  rust: (code) => ["sh", "-c", `echo '${code.replace(/'/g, "'\\''")}' > /tmp/main.rs && rustc /tmp/main.rs -o /tmp/main && /tmp/main`],
 };
 
 const DEFAULT_MEMORY_LIMIT_MB = 256;
