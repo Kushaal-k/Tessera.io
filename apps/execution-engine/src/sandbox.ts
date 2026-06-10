@@ -62,11 +62,21 @@ export async function executeInSandbox(task: ExecutionTask): Promise<ExecutionRe
     container = await docker.createContainer({
       Image: image,
       Cmd: cmd,
+      User: "sandbox",
+      WorkingDir: "/tmp",
       HostConfig: {
         Runtime: config.runtime,
         Memory: config.memoryLimitMb * 1024 * 1024,
         CpuQuota: config.cpuQuota,
         NetworkMode: config.networkDisabled ? "none" : "bridge",
+        CapDrop: ["ALL"],
+        ReadonlyRootfs: true,
+        SecurityOpt: [
+          "no-new-privileges:true",
+        ],
+        Tmpfs: {
+          "/tmp": "size=64M,noexec,nosuid",
+        },
         AutoRemove: false,
       },
       NetworkDisabled: config.networkDisabled,
