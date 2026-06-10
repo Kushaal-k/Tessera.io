@@ -14,7 +14,7 @@ const FILE_NAMES: Record<SupportedLanguage, string> = {
   typescript: "main.ts",
   python: "main.py",
   cpp: "main.cpp",
-  java: "main.java",
+  java: "Main.java",
 };
 
 export function App() {
