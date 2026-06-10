@@ -1,5 +1,6 @@
 import Dockerode from "dockerode";
 import type { ExecutionTask, ExecutionResult, SandboxConfig, SupportedLanguage } from "@tessera/shared-types";
+import * as tar from "tar-stream";
 
 const docker = new Dockerode({ socketPath: "/var/run/docker.sock" });
 
@@ -13,8 +14,8 @@ const LANGUAGE_IMAGES: Record<SupportedLanguage, string> = {
 const LANGUAGE_COMMANDS: Record<SupportedLanguage, (code: string) => string[]> = {
   typescript: (code) => ["node", "--input-type=module", "-e", code],
   python: (code) => ["python3", "-c", code],
-  cpp: (code) => ["sh", "-c", `echo '${code.replace(/'/g, "'\\''")}' > /tmp/main.cpp && g++ -o /tmp/main /tmp/main.cpp && /tmp/main`],
-  java: (code) => ["sh", "-c", `echo '${code.replace(/'/g, "'\\''")}' > /tmp/Main.java && javac /tmp/Main.java && java -cp /tmp Main`],
+  cpp: () => ["sh", "-c", "g++ -o /tmp/main /tmp/main.cpp && /tmp/main"],
+  java: () => ["sh", "-c", "javac /tmp/Main.java && java -cp /tmp Main"],
 };
 
 const DEFAULT_SANDBOX_CONFIG: SandboxConfig = {
@@ -35,7 +36,7 @@ async function ensureImageExists(image: string): Promise<void> {
     console.log(`[sandbox] pulling docker image: ${image} (this might take a moment)...`);
     const stream = await docker.pull(image);
     await new Promise<void>((resolve, reject) => {
-      docker.modem.followProgress(stream, (err) => {
+      docker.modem.followProgress(stream, (err: Error | null) => {
         if (err) reject(err);
         else resolve();
       });
@@ -51,6 +52,7 @@ export async function executeInSandbox(task: ExecutionTask): Promise<ExecutionRe
   const cmd = LANGUAGE_COMMANDS[task.language](task.code);
 
   let container: Dockerode.Container | undefined;
+  let timerId: NodeJS.Timeout | undefined;
 
   try {
     await ensureImageExists(image);
@@ -69,14 +71,36 @@ export async function executeInSandbox(task: ExecutionTask): Promise<ExecutionRe
       StopTimeout: Math.ceil(task.timeoutMs / 1000),
     });
 
+    if (task.language === "cpp" || task.language === "java") {
+      const filename = task.language === "cpp" ? "main.cpp" : "Main.java";
+      const tarPack = tar.pack();
+      
+      const tarPromise = new Promise<Buffer>((resolve, reject) => {
+        const chunks: Buffer[] = [];
+        tarPack.on("data", (chunk: Buffer) => chunks.push(chunk));
+        tarPack.on("end", () => resolve(Buffer.concat(chunks)));
+        tarPack.on("error", (err: Error) => reject(err));
+      });
+
+      tarPack.entry({ name: filename }, task.code);
+      tarPack.finalize();
+
+      const tarBuffer = await tarPromise;
+      await container.putArchive(tarBuffer, { path: "/tmp" });
+    }
+
     await container.start();
 
     const timeoutPromise = new Promise<"timeout">((resolve) => {
-      setTimeout(() => resolve("timeout"), task.timeoutMs);
+      timerId = setTimeout(() => resolve("timeout"), task.timeoutMs);
     });
 
     const waitPromise = container.wait();
     const race = await Promise.race([waitPromise, timeoutPromise]);
+
+    if (timerId) {
+      clearTimeout(timerId);
+    }
 
     if (race === "timeout") {
       try { await container.stop({ t: 1 }); } catch { /* already stopped */ }
@@ -105,6 +129,9 @@ export async function executeInSandbox(task: ExecutionTask): Promise<ExecutionRe
       durationMs: performance.now() - startTime,
     };
   } catch (err: unknown) {
+    if (timerId) {
+      clearTimeout(timerId);
+    }
     const message = err instanceof Error ? err.message : String(err);
     return {
       taskId: task.id,
@@ -120,3 +147,5 @@ export async function executeInSandbox(task: ExecutionTask): Promise<ExecutionRe
     }
   }
 }
+
+
