@@ -1,5 +1,10 @@
 import Dockerode from "dockerode";
-import type { ExecutionTask, ExecutionResult, SandboxConfig, SupportedLanguage } from "@tessera/shared-types";
+import type {
+  ExecutionTask,
+  ExecutionResult,
+  SandboxConfig,
+  SupportedLanguage
+} from "@tessera/shared-types";
 import * as tar from "tar-stream";
 
 const docker = new Dockerode({ socketPath: "/var/run/docker.sock" });
@@ -12,44 +17,96 @@ const LANGUAGE_IMAGES: Record<SupportedLanguage, string> = {
   rust: "rust:1.75-slim",
 };
 
-const LANGUAGE_COMMANDS: Record<SupportedLanguage, (code: string) => string[]> = {
+const LANGUAGE_COMMANDS: Record<
+  SupportedLanguage,
+  (code: string) => string[]
+> = {
   typescript: (code) => ["node", "--input-type=module", "-e", code],
+
   python: (code) => ["python3", "-c", code],
-  cpp: (code) => ["sh", "-c", `echo '${code.replace(/'/g, "'\\''")}' > /tmp/main.cpp && g++ -o /tmp/main /tmp/main.cpp && /tmp/main`],
-  java: (code) => ["sh", "-c", `echo '${code.replace(/'/g, "'\\''")}' > /tmp/Main.java && javac /tmp/Main.java && java -cp /tmp Main`],
-  rust: (code) => ["sh", "-c", `echo '${code.replace(/'/g, "'\\''")}' > /tmp/main.rs && rustc /tmp/main.rs -o /tmp/main && /tmp/main`],
+
+  cpp: (code) => [
+    "sh",
+    "-c",
+    `echo '${code.replace(/'/g, "'\\''")}' > /tmp/main.cpp && g++ -o /tmp/main /tmp/main.cpp && /tmp/main`,
+  ],
+
+  java: (code) => [
+    "sh",
+    "-c",
+    `echo '${code.replace(/'/g, "'\\''")}' > /tmp/Main.java && javac /tmp/Main.java && java -cp /tmp Main`,
+  ],
+
+  rust: (code) => [
+    "sh",
+    "-c",
+    `echo '${code.replace(/'/g, "'\\''")}' > /tmp/main.rs && rustc /tmp/main.rs -o /tmp/main && /tmp/main`,
+  ],
 };
+
+const DEFAULT_MEMORY_LIMIT_MB = 256;
 
 const DEFAULT_SANDBOX_CONFIG: SandboxConfig = {
   runtime: "runc",
-  memoryLimitMb: 256,
+  memoryLimitMb: DEFAULT_MEMORY_LIMIT_MB,
   cpuQuota: 100000,
   networkDisabled: true,
 };
 
 function detectRuntime(): SandboxConfig["runtime"] {
-  return process.env["SANDBOX_RUNTIME"] === "runsc" ? "runsc" : "runc";
+  return process.env["SANDBOX_RUNTIME"] === "runsc"
+    ? "runsc"
+    : "runc";
+}
+
+function detectMemoryLimit(): number {
+  const value = process.env["SANDBOX_MEMORY_LIMIT"];
+
+  if (!value) {
+    return DEFAULT_MEMORY_LIMIT_MB;
+  }
+
+  const parsed = Number.parseInt(value, 10);
+
+  return Number.isFinite(parsed) && parsed > 0
+    ? parsed
+    : DEFAULT_MEMORY_LIMIT_MB;
 }
 
 async function ensureImageExists(image: string): Promise<void> {
   try {
     await docker.getImage(image).inspect();
   } catch {
-    console.log(`[sandbox] pulling docker image: ${image} (this might take a moment)...`);
+    console.log(
+      `[sandbox] pulling docker image: ${image} (this might take a moment)...`
+    );
+
     const stream = await docker.pull(image);
+
     await new Promise<void>((resolve, reject) => {
       docker.modem.followProgress(stream, (err: Error | null) => {
         if (err) reject(err);
         else resolve();
       });
     });
-    console.log(`[sandbox] successfully pulled image: ${image}`);
+
+    console.log(
+      `[sandbox] successfully pulled image: ${image}`
+    );
   }
 }
 
-export async function executeInSandbox(task: ExecutionTask): Promise<ExecutionResult> {
+export async function executeInSandbox(
+  task: ExecutionTask
+): Promise<ExecutionResult> {
   const startTime = performance.now();
-  const config: SandboxConfig = { ...DEFAULT_SANDBOX_CONFIG, runtime: detectRuntime() };
+
+  const config: SandboxConfig = {
+    ...DEFAULT_SANDBOX_CONFIG,
+    runtime: detectRuntime(),
+    memoryLimitMb: detectMemoryLimit(),
+  };
+
   const image = LANGUAGE_IMAGES[task.language];
   const cmd = LANGUAGE_COMMANDS[task.language](task.code);
 
@@ -86,7 +143,7 @@ export async function executeInSandbox(task: ExecutionTask): Promise<ExecutionRe
     if (task.language === "cpp" || task.language === "java") {
       const filename = task.language === "cpp" ? "main.cpp" : "Main.java";
       const tarPack = tar.pack();
-      
+
       const tarPromise = new Promise<Buffer>((resolve, reject) => {
         const chunks: Buffer[] = [];
         tarPack.on("data", (chunk: Buffer) => chunks.push(chunk));
@@ -115,19 +172,34 @@ export async function executeInSandbox(task: ExecutionTask): Promise<ExecutionRe
     }
 
     if (race === "timeout") {
-      try { await container.stop({ t: 1 }); } catch { /* already stopped */ }
+      try {
+        await container.stop({ t: 1 });
+      } catch {
+        // already stopped
+      }
+
       return {
         taskId: task.id,
         status: "timeout",
         stdout: "",
-        stderr: `Execution timed out after ${String(task.timeoutMs)}ms`,
+        stderr: `Execution timed out after ${String(
+          task.timeoutMs
+        )}ms`,
         exitCode: null,
         durationMs: performance.now() - startTime,
       };
     }
 
-    const logs = await container.logs({ stdout: true, stderr: true, follow: false });
-    const logOutput = typeof logs === "string" ? logs : logs.toString("utf-8");
+    const logs = await container.logs({
+      stdout: true,
+      stderr: true,
+      follow: false,
+    });
+
+    const logOutput =
+      typeof logs === "string"
+        ? logs
+        : logs.toString("utf-8");
 
     const inspectInfo = await container.inspect();
     const exitCode = inspectInfo.State.ExitCode as number;
@@ -155,7 +227,11 @@ export async function executeInSandbox(task: ExecutionTask): Promise<ExecutionRe
     };
   } finally {
     if (container) {
-      try { await container.remove({ force: true }); } catch { /* already removed */ }
+      try {
+        await container.remove({ force: true });
+      } catch {
+        // already removed
+      }
     }
   }
 }
