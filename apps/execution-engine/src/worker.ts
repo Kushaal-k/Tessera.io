@@ -10,11 +10,20 @@ const worker = new Worker<ExecutionTask, ExecutionResult>(
   QUEUE_NAME,
   async (job: Job<ExecutionTask>): Promise<ExecutionResult> => {
     console.log(`processing job ${job.id ?? "unknown"} [lang=${job.data.language}]`);
-    return executeInSandbox(job.data);
+    try {
+      return await executeInSandbox(job.data);
+    } catch (err) {
+      const error = err instanceof Error ? err : new Error(String(err));
+      await job.moveToFailed(error, job.id ?? "", true);
+      throw error;
+    }
   },
   {
     connection,
     concurrency: Number(process.env["WORKER_CONCURRENCY"] ?? 3),
+    lockDuration: 60000,
+    stalledInterval: 30000,
+    maxStalledCount: 3,
   },
 );
 
