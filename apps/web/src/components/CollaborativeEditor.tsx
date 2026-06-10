@@ -16,6 +16,7 @@ const LANGUAGE_MAP: Record<SupportedLanguage, string> = {
   typescript: "typescript",
   python: "python",
   cpp: "cpp",
+  go: "go",
 };
 
 export function CollaborativeEditor({
