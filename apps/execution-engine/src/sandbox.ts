@@ -19,7 +19,7 @@ const LANGUAGE_IMAGES: Record<SupportedLanguage, string> = {
 
 const LANGUAGE_COMMANDS: Record<
   SupportedLanguage,
-  (code: string) => string[] 
+  (code: string) => string[]
 > = {
   typescript: (code) => ["node", "--input-type=module", "-e", code],
 
