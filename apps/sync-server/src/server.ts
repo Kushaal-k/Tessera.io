@@ -57,6 +57,16 @@ const QUEUE_NAME = "code-execution";
 const executionQueue = new Queue<ExecutionTask>(QUEUE_NAME, { connection: connectionOptions });
 const queueEvents = new QueueEvents(QUEUE_NAME, { connection: connectionOptions });
 
+// Prevent unhandled Redis connection errors from crashing the process in dev
+// environments where Redis may not be running. The collaboration layer continues
+// to work; code execution jobs will fail gracefully per-request.
+executionQueue.on("error", (err) => {
+  console.warn("[sync-server] BullMQ Queue connection error (Redis unavailable?):", err.message);
+});
+queueEvents.on("error", (err) => {
+  console.warn("[sync-server] BullMQ QueueEvents error (Redis unavailable?):", err.message);
+});
+
 io.on("connection", (socket) => {
   let currentRoomId: string | null = null;
   let currentParticipant: Participant | null = null;
@@ -147,7 +157,7 @@ io.on("connection", (socket) => {
 
       console.log(`[sync-server] enqueuing code execution ${taskId} [lang=${payload.language}]`);
       const job = await executionQueue.add("execute", task, { jobId: taskId });
-      
+
       const result = await job.waitUntilFinished(queueEvents);
       console.log(`[sync-server] execution ${taskId} finished`);
       socket.emit("execution-result", result as ExecutionResult);

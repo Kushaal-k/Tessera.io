@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "uvicorn src.main:app --reload --host 127.0.0.1 --port 8000",
+    "dev": "python -m uvicorn src.main:app --reload --host 127.0.0.1 --port 8000",
     "build": "echo 'Python service — no TS build required'",
     "typecheck": "echo 'Use mypy or pyright for Python type checking'",
     "clean": "find . -type d -name __pycache__ -exec rm -rf {} + 2>/dev/null; true",
