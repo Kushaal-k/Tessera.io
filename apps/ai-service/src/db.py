@@ -13,14 +13,15 @@ _logger = logging.getLogger(__name__)
 
 VECTOR_SEARCH_INDEX_NAME = "vector_index"
 FILE_PATH_INDEX_NAME = "file_path_idx"
-FILE_PATH_CHUNK_INDEX_NAME = "file_path_chunk_index_idx"
+FILE_PATH_CHUNK_INDEX_NAME = "file_path_chunk_idx"
 _DUPLICATE_INDEX_ERROR_CODES = {68, 85, 86, 11000}
+_UNSUPPORTED_SEARCH_INDEX_ERROR_CODES = {40324}
 _DUPLICATE_INDEX_ERROR_MARKERS = (
     "already exists",
     "duplicate",
-    "IndexAlreadyExists",
-    "IndexKeySpecsConflict",
-    "IndexOptionsConflict",
+    "indexalreadyexists",
+    "indexkeyspecsconflict",
+    "indexoptionsconflict",
 )
 
 
@@ -91,15 +92,39 @@ async def ensure_collection_indexes() -> None:
         pass
 
     collection = db[settings.MONGODB_COLLECTION]
-    await collection.create_index(
+    await _ensure_standard_index(
+        collection,
         [("file_path", ASCENDING)],
-        name=FILE_PATH_INDEX_NAME,
+        FILE_PATH_INDEX_NAME,
     )
-    await collection.create_index(
+    await _ensure_standard_index(
+        collection,
         [("file_path", ASCENDING), ("chunk_index", ASCENDING)],
-        name=FILE_PATH_CHUNK_INDEX_NAME,
+        FILE_PATH_CHUNK_INDEX_NAME,
     )
     await _ensure_vector_search_index(collection)
+    _logger.info(
+        "MongoDB indexes ensured for collection %s",
+        settings.MONGODB_COLLECTION,
+    )
+
+
+async def _ensure_standard_index(
+    collection: AsyncIOMotorCollection,  # type: ignore[type-arg]
+    keys: list[tuple[str, int]],
+    name: str,
+) -> None:
+    try:
+        await collection.create_index(keys, name=name)
+    except OperationFailure as exc:
+        if _is_duplicate_index_error(exc):
+            return
+        _logger.warning(
+            "Skipping MongoDB index creation for %s.%s: %s",
+            settings.MONGODB_COLLECTION,
+            name,
+            exc,
+        )
 
 
 async def _ensure_vector_search_index(
@@ -148,20 +173,38 @@ async def _has_vector_search_index(
         async for index in collection.list_search_indexes():
             if index.get("name") == VECTOR_SEARCH_INDEX_NAME:
                 return True
-    except (AttributeError, OperationFailure) as exc:
+    except AttributeError as exc:
         _logger.warning(
             "Skipping MongoDB search index inspection for %s: %s",
             settings.MONGODB_COLLECTION,
             exc,
         )
         return True
+    except OperationFailure as exc:
+        if _is_search_index_unsupported_error(exc):
+            _logger.warning(
+                "Skipping MongoDB search index inspection for %s: %s",
+                settings.MONGODB_COLLECTION,
+                exc,
+            )
+            return True
+        _logger.warning(
+            "MongoDB search index inspection failed for %s: %s",
+            settings.MONGODB_COLLECTION,
+            exc,
+        )
+        return False
 
     return False
+
+
+def _is_search_index_unsupported_error(exc: OperationFailure) -> bool:
+    return exc.code in _UNSUPPORTED_SEARCH_INDEX_ERROR_CODES
 
 
 def _is_duplicate_index_error(exc: OperationFailure) -> bool:
     if exc.code in _DUPLICATE_INDEX_ERROR_CODES:
         return True
 
-    error_text = str(exc)
+    error_text = str(exc).lower()
     return any(marker in error_text for marker in _DUPLICATE_INDEX_ERROR_MARKERS)
