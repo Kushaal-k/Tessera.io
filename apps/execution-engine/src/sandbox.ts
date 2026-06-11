@@ -7,7 +7,8 @@ const LANGUAGE_IMAGES: Record<SupportedLanguage, string> = {
   typescript: "node:20-slim",
   python: "python:3.12-slim",
   cpp: "gcc:14",
-  java: "openjdk:17-slim"
+  java: "openjdk:17-slim",
+  go: "golang:1.22-bookworm"
 };
 
 const LANGUAGE_COMMANDS: Record<SupportedLanguage, (code: string) => string[]> = {
@@ -15,6 +16,7 @@ const LANGUAGE_COMMANDS: Record<SupportedLanguage, (code: string) => string[]> =
   python: (code) => ["python3", "-c", code],
   cpp: (code) => ["sh", "-c", `echo '${code.replace(/'/g, "'\\''")}' > /tmp/main.cpp && g++ -o /tmp/main /tmp/main.cpp && /tmp/main`],
   java: (code) => ["sh", "-c", `echo '${code.replace(/'/g, "'\\''")}' > /tmp/Main.java && javac /tmp/Main.java && java -cp /tmp Main`],
+  go: (code) => ["sh", "-c", `echo '${code.replace(/'/g, "'\\''")}' > /tmp/main.go && go run /tmp/main.go`]
 };
 
 const DEFAULT_SANDBOX_CONFIG: SandboxConfig = {
