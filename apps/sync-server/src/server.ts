@@ -247,7 +247,7 @@ io.on("connection", (socket) => {
     const room = rooms.get(currentRoomId);
     if (!room) return;
 
-    room.participants.delete(socket.id);
+    removeParticipant(room, socket.id);
 
     if (currentParticipant) {
       removeAwarenessStates(room.awareness, [room.awareness.clientID], socket);
@@ -260,6 +260,15 @@ io.on("connection", (socket) => {
   });
 });
 
+// Remove a participant from the room's presence registry.
+// This helper is used by both disconnect handling and
+// heartbeat expiration cleanup.
+function removeParticipant(
+  room: RoomState,
+  socketId: string,
+): void {
+  room.participants.delete(socketId);
+}
 
 
 server.listen(PORT, () => {

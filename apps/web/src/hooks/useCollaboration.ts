@@ -74,16 +74,23 @@ export function useCollaboration(config: SyncConnectionConfig): UseCollaboration
 
     socket.on("connect", () => {
       setConnected(true);
+
       socket.emit("join-room", {
         roomId: config.roomId,
         participant: config.participant,
       });
+
+      // Recreate the provider after reconnects. Any existing
+      // provider must be cleaned up first to avoid duplicate
+      // event listeners and heartbeat timers.
+      providerRef.current?.destroy();
 
       const provider = new TesseraSocketProvider({
         socket,
         ydoc: collabDoc.ydoc,
         awareness: awarenessInstance,
       });
+
       providerRef.current = provider;
     });
 
