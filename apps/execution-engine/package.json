@@ -9,7 +9,7 @@
     "start": "node dist/worker.js",
     "typecheck": "tsc --noEmit",
     "clean": "rm -rf dist",
-    "lint": "echo 'lint not configured yet'"
+    "lint": "eslint src --ext .ts"
   },
   "dependencies": {
     "@tessera/shared-types": "*",
@@ -18,7 +18,11 @@
   },
   "devDependencies": {
     "@types/dockerode": "^4.0.1",
+    "@eslint/js": "^9.29.0",
+    "eslint": "^9.29.0",
+    "globals": "^16.2.0",
     "tsx": "^4.22.3",
-    "typescript": "^6.0.3"
+    "typescript": "^6.0.3",
+    "typescript-eslint": "^8.35.1"
   }
 }
