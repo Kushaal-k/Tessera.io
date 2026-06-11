@@ -77,6 +77,7 @@ export function useCollaboration(config: SyncConnectionConfig): UseCollaboration
       socket.emit("join-room", {
         roomId: config.roomId,
         participant: config.participant,
+        clientID: awarenessInstance.clientID,
       });
 
       const provider = new TesseraSocketProvider({

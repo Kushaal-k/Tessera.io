@@ -85,6 +85,7 @@ export interface SyncClientToServerEvents {
   readonly "join-room": (payload: {
     readonly roomId: string;
     readonly participant: Participant;
+    readonly clientID: number;
   }) => void;
   readonly "sync-step-1": (stateVector: Uint8Array) => void;
   readonly "sync-step-2": (diff: Uint8Array) => void;
