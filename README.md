@@ -12,12 +12,12 @@ Standard cloud IDEs are built for humans. Tessera.io is built for the future: a 
 
 ## 🚀 Current State: The MVP
 
-The current repository is the foundational MVP. We have established the core plumbing to allow real-time collaborative typing and remote code execution. 
+The current repository is the foundational MVP. We have established the core plumbing to allow real-time collaborative typing and remote code execution.
 
-*   **Real-Time Collaboration:** Powered by Yjs (CRDTs) and Socket.io, ensuring deterministic, conflict-free state resolution across clients.
-*   **The Editor:** React + TailwindCSS utilizing `@monaco-editor/react` for a native VS Code-like typing experience.
-*   **Secure Execution Engine:** A Node.js worker utilizing BullMQ and the Docker Engine API to run untrusted code safely in isolated, ephemeral containers (with optional gVisor support).
-*   **AI Service Foundation:** A lightweight Python/FastAPI service hooked into the Model Context Protocol (MCP) and MongoDB Atlas Vector Search for RAG pipelines.
+* **Real-Time Collaboration:** Powered by Yjs (CRDTs) and Socket.io, ensuring deterministic, conflict-free state resolution across clients.
+* **The Editor:** React + TailwindCSS utilizing `@monaco-editor/react` for a native VS Code-like typing experience.
+* **Secure Execution Engine:** A Node.js worker utilizing BullMQ and the Docker Engine API to run untrusted code safely in isolated, ephemeral containers (with optional gVisor support).
+* **AI Service Foundation:** A lightweight Python/FastAPI service hooked into the Model Context Protocol (MCP) and MongoDB Atlas Vector Search for RAG pipelines.
 
 ---
 
@@ -67,6 +67,7 @@ Before starting, install the tools for your operating system:
 * **Python** ≥ 3.11 (for the AI microservice)
 
 *Optional:*
+
 * **gVisor** (`runsc`) for enhanced kernel isolation in the execution engine.
 
 If the execution engine cannot reach Docker, hits WSL mount errors, or leaves behind interrupted sandbox containers, see the [Docker Sandbox Troubleshooting](docs/docker-sandbox-troubleshooting.md) guide.
@@ -74,6 +75,7 @@ If the execution engine cannot reach Docker, hits WSL mount errors, or leaves be
 ### Clone and install
 
 1. **Clone the repository:**
+
 ```bash
 git clone https://github.com/Kushaal-k/Tessera.io.git
 cd Tessera.io
@@ -81,17 +83,20 @@ cd Tessera.io
 
 The README defaults to HTTPS because it works without SSH key setup. If you prefer SSH and have keys configured, use `git clone git@github.com:Kushaal-k/Tessera.io.git` instead. If you are contributing from a fork, replace the clone URL with your fork's SSH or HTTPS URL.
 
-2. **Install all workspace dependencies:**
+1. **Install all workspace dependencies:**
+
 ```bash
 npm install
 ```
 
-3. **Create your local environment file:**
+1. **Create your local environment file:**
+
 ```bash
 cp .env.example .env
 ```
 
 On Windows PowerShell:
+
 ```powershell
 Copy-Item .env.example .env
 ```
@@ -99,6 +104,7 @@ Copy-Item .env.example .env
 ### Linux setup
 
 1. **Verify Node.js, npm, Docker, and Python:**
+
 ```bash
 node --version
 npm --version
@@ -106,21 +112,24 @@ docker version
 python3 --version
 ```
 
-2. **Start Docker if it is not already running:**
+1. **Start Docker if it is not already running:**
 
 On systemd-based Linux distributions:
+
 ```bash
 sudo systemctl start docker
 ```
 
 On non-systemd distributions or WSL setups that use the Docker service script:
+
 ```bash
 sudo service docker start
 ```
 
 If neither command applies, follow your distribution's Docker startup instructions.
 
-3. **Start infrastructure services (Redis and MongoDB):**
+1. **Start infrastructure services (Redis and MongoDB):**
+
 ```bash
 # Start Redis (if not already running)
 docker run -d --name tessera-redis -p 127.0.0.1:6379:6379 redis:7-alpine
@@ -130,11 +139,13 @@ docker run -d --name tessera-mongo -p 127.0.0.1:27017:27017 mongo:7
 ```
 
 If a container with the same name already exists, start it instead:
+
 ```bash
 docker start tessera-redis tessera-mongo
 ```
 
-4. **Set up the Python AI service:**
+1. **Set up the Python AI service:**
+
 ```bash
 cd apps/ai-service
 python3 -m venv .venv
@@ -143,7 +154,8 @@ pip install -r requirements.txt
 cd ../..
 ```
 
-5. **Start all services in development mode:**
+1. **Start all services in development mode:**
+
 ```bash
 npm run dev
 ```
@@ -153,6 +165,7 @@ npm run dev
 For the smoothest Windows experience, use Windows 11, PowerShell, and Docker Desktop with the WSL 2 backend enabled.
 
 1. **Verify Node.js, npm, Docker Desktop, and Python:**
+
 ```powershell
 node --version
 npm --version
@@ -160,7 +173,8 @@ docker version
 python --version
 ```
 
-2. **Start infrastructure services (Redis and MongoDB):**
+1. **Start infrastructure services (Redis and MongoDB):**
+
 ```powershell
 # Start Redis (if not already running)
 docker run -d --name tessera-redis -p 127.0.0.1:6379:6379 redis:7-alpine
@@ -170,11 +184,13 @@ docker run -d --name tessera-mongo -p 127.0.0.1:27017:27017 mongo:7
 ```
 
 If a container with the same name already exists, start it instead:
+
 ```powershell
 docker start tessera-redis tessera-mongo
 ```
 
-3. **Set up the Python AI service:**
+1. **Set up the Python AI service:**
+
 ```powershell
 cd apps/ai-service
 python -m venv .venv
@@ -184,13 +200,15 @@ cd ..\..
 ```
 
 If PowerShell blocks virtual environment activation, allow scripts for the current PowerShell session only:
+
 ```powershell
 Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
 ```
 
 Then run the activation command again. This setting expires when the PowerShell window closes.
 
-4. **Start all services in development mode:**
+1. **Start all services in development mode:**
+
 ```powershell
 npm run dev
 ```
@@ -219,6 +237,50 @@ This command stays running while the services are active. When it is running, co
 
 `npm run dev` concurrently starts the React frontend, the Socket.io sync server, the FastAPI service, and the BullMQ execution worker via Turborepo.
 
+---
+
+## 🩺 Sync Server Monitoring Endpoints
+
+The `apps/sync-server` exposes two lightweight HTTP endpoints for liveness and readiness probing. These are designed for use with Docker health checks, container orchestration platforms (e.g. Kubernetes), and uptime monitors.
+
+| Endpoint | Method | Purpose |
+| --- | --- | --- |
+| `/health` | `GET` | **Liveness probe** — confirms the process is running |
+| `/ready` | `GET` | **Readiness probe** — confirms the server is fully initialized |
+
+### `GET /health`
+
+Returns `HTTP 200` whenever the process is alive. Safe to call at any point during startup.
+
+```json
+{
+  "status": "ok",
+  "service": "sync-server",
+  "timestamp": "2026-06-11T12:00:00.000Z"
+}
+```
+
+### `GET /ready`
+
+Returns `HTTP 200` once the HTTP server has finished binding to its port and is ready to accept Socket.io collaboration connections. Returns `HTTP 503` if still initializing.
+
+```json
+{
+  "ready": true,
+  "uptime": 42
+}
+```
+
+> **Note:** `uptime` is reported in seconds since the server process started.
+
+### Docker Health Check Example
+
+```dockerfile
+HEALTHCHECK --interval=15s --timeout=5s --start-period=10s --retries=3 \
+  CMD wget -qO- http://localhost:4000/health || exit 1
+```
+
+---
 
 ## 🗺️ Roadmap & Future Plans
 

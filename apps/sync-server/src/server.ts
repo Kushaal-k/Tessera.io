@@ -26,6 +26,10 @@ const REDIS_PORT = Number(process.env["REDIS_PORT"] ?? 6379);
 
 const rooms = new Map<string, RoomState>();
 
+// Tracks whether the server has fully started and is ready to accept connections.
+let serverReady = false;
+const startTime = Date.now();
+
 function getOrCreateRoom(roomId: string): RoomState {
   const existing = rooms.get(roomId);
   if (existing) return existing;
@@ -40,8 +44,34 @@ function getOrCreateRoom(roomId: string): RoomState {
 const app = express();
 app.use(express.json());
 
+/**
+ * GET /health
+ * Lightweight liveness probe. Returns HTTP 200 when the process is running.
+ * Safe to call at any time — does not depend on readiness state.
+ */
 app.get("/health", (_req, res) => {
-  res.json({ status: "ok" });
+  res.json({
+    status: "ok",
+    service: "sync-server",
+    timestamp: new Date().toISOString(),
+  });
+});
+
+/**
+ * GET /ready
+ * Readiness probe. Returns HTTP 200 only after the HTTP server has fully
+ * started and is capable of accepting collaboration connections.
+ * Returns HTTP 503 if the server is still initializing.
+ */
+app.get("/ready", (_req, res) => {
+  if (!serverReady) {
+    res.status(503).json({ ready: false });
+    return;
+  }
+  res.json({
+    ready: true,
+    uptime: Math.floor((Date.now() - startTime) / 1000),
+  });
 });
 
 const server = http.createServer(app);
@@ -193,7 +223,10 @@ io.on("connection", (socket) => {
 });
 
 server.listen(PORT, () => {
+  serverReady = true;
   console.log(`sync-server listening on :${String(PORT)}`);
+  console.log(`  → health:  http://localhost:${String(PORT)}/health`);
+  console.log(`  → ready:   http://localhost:${String(PORT)}/ready`);
 });
 
 async function gracefulShutdown() {
