@@ -13,7 +13,7 @@ class Settings(BaseSettings):
     # Bound server selection so an unreachable database fails fast (e.g. in the
     # /health probe) instead of waiting out Motor's 30s default.
     MONGODB_TIMEOUT_MS: int = 3000
-    EMBEDDING_DIMENSIONS: int = 1536
+    EMBEDDING_DIMENSIONS: int = 384
     EMBEDDING_MODEL: str = "sentence-transformers/all-MiniLM-L6-v2"
     MCP_SERVER_NAME: str = "tessera-ai"
 
