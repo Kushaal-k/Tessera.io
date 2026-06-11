@@ -18,11 +18,11 @@
       "cache": true
     },
     "lint": {
-      "dependsOn": [],
+      "dependsOn": ["build"],
       "cache": true
     },
     "typecheck": {
-      "dependsOn": [],
+      "dependsOn": ["build"],
       "cache": true
     },
     "clean": {
