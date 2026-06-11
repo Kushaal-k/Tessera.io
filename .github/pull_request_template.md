@@ -25,7 +25,6 @@ Please delete options that are not relevant.
 - [ ] Tested functionality in the browser / execution engine
 
 ## Checklist
-- [ ] My commits are **signed off** using `git commit -s` (e.g. `Signed-off-by: Name <email>`).
 - [ ] I have read the [CONTRIBUTING.md](CONTRIBUTING.md) guidelines.
 - [ ] My code follows the style guidelines of this project.
 - [ ] I have performed a self-review of my own code.

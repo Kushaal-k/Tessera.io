@@ -1,14 +1,15 @@
-# Contributing to Tessera.io
+ # Contributing to Tessera.io
 
 First off, thank you for considering contributing to Tessera.io! It's people like you that make this tool such a great collaborative sandbox.
 
 ## Reporting Issues
 
-Before opening a new issue, please search the existing issues to see if the problem or feature request has already been discussed. 
+Before opening a new issue, please search the existing issues to see if the problem or feature request has already been discussed.
 
 If you find a new bug or have a feature proposal, please open an issue using our interactive templates:
-- **🐛 Bug Reports:** Choose this template to report crashes, unexpected behavior, or security issues. Please include reproduction steps, expected behavior, and system environment info.
-- **💡 Feature Requests:** Choose this template to suggest new features, integrations, or improvements to the collaborative developer sandbox.
+
+* **🐛 Bug Reports:** Choose this template to report crashes, unexpected behavior, or security issues. Please include reproduction steps, expected behavior, and system environment info.
+* **💡 Feature Requests:** Choose this template to suggest new features, integrations, or improvements to the collaborative developer sandbox.
 
 ---
 
@@ -17,47 +18,92 @@ If you find a new bug or have a feature proposal, please open an issue using our
 To ensure a smooth workflow and high code quality, we ask all contributors to follow these steps:
 
 ### 1. Claim an Issue
-- Find an open issue you'd like to work on. We recommend checking out our [good first issues](https://github.com/Kushaal-k/Tessera.io/issues?q=is%3Aopen+is%3Aissue+label%3A%22good+first+issue%22).
-- Comment `/claim` directly on the issue. Our auto-claim bot will automatically verify that the issue is unassigned, assign it to you, and post a welcoming confirmation comment!
+
+* Find an open issue you'd like to work on. We recommend checking out our good first issues.
+* Comment `/claim` directly on the issue. Our auto-claim bot will automatically verify that the issue is unassigned, assign it to you, and post a welcoming confirmation comment.
 
 ### 2. Star & Fork the Repository
-- **Star the repo:** Show your support by starring the main Tessera.io repository!
-- **Fork it:** Click the "Fork" button at the top right of the repository page to create your own copy.
-- **Clone your fork:**
-  ```bash
-  git clone git@github.com:<your-username>/Tessera.io.git
-  cd Tessera.io
-  ```
+
+* **Star the repo:** Show your support by starring the main Tessera.io repository.
+* **Fork it:** Click the "Fork" button at the top right of the repository page to create your own copy.
+
+**Clone your fork:**
+
+```bash
+git clone git@github.com:<your-username>/Tessera.io.git
+cd Tessera.io
+```
 
 ### 3. Branching
+
 Create a new branch for your feature or bug fix:
+
 ```bash
 git checkout -b feature/your-feature-name
 ```
 
 ### 4. Making Changes
-Make your changes in the relevant workspace(s) as described in the `README.md`. Ensure that your code follows the strict TypeScript guidelines of this repository.
+
+Make your changes in the relevant workspace(s) as described in the `README.md`.
+
+Please ensure that:
+
+* Your code follows the project's TypeScript guidelines.
+* Code remains clean, readable, and maintainable.
+* Existing functionality is not broken.
+* New functionality is adequately tested.
 
 Test your changes locally by running:
+
 ```bash
 npm run typecheck
 npm run build
 npm run dev
 ```
 
-### 5. Committing Your Changes (Sign-offs Required)
-**IMPORTANT:** We require all commits to be signed off. The sign-off is a simple line at the end of the commit message which certifies that you wrote it or otherwise have the right to pass it on as an open-source patch. 
+### 5. Committing Your Changes
 
-Use the `-s` or `--signoff` flag when you commit your changes:
+Commit your changes using clear and descriptive commit messages.
+
+Example:
+
 ```bash
-git commit -s -m "feat: your descriptive commit message"
+git commit -m "feat: add collaborative workspace improvements"
 ```
-This will automatically append `Signed-off-by: Your Name <your.email@example.com>` to your commit message. If you do not sign off your commits, our CI pipeline will reject the pull request.
+
+We encourage contributors to follow conventional commit formats when possible:
+
+```text
+feat: add new feature
+fix: resolve authentication issue
+docs: update contributing guide
+refactor: improve code structure
+```
 
 ### 6. Submit a Pull Request
-Once you've pushed your signed-off commits to your fork, head over to the main repository and open a Pull Request. Provide a clear description of the problem you're solving and the changes you've made.
+
+Once you've pushed your commits to your fork, head over to the main repository and open a Pull Request.
+
+Please ensure your Pull Request includes:
+
+* A clear description of the problem being solved.
+* A summary of the changes made.
+* Any relevant issue references.
+* Testing details, if applicable.
+
+#### UI Changes
+
+If your Pull Request includes UI-related changes, please include one of the following:
+
+* At least one screenshot showing the updated user interface, or
+* A short GIF/video demonstrating the change and relevant interactions.
+
+Providing visual evidence helps reviewers understand, verify, and test UI improvements more efficiently.
 
 ---
 
 ## Need Help?
-Look for issues tagged with `good first issue` if you're not sure where to start. We look forward to your contributions!
+
+Look for issues tagged with `good first issue` if you're not sure where to start.
+
+We look forward to your contributions and thank you for helping improve Tessera.io!
