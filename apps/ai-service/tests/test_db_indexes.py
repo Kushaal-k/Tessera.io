@@ -100,6 +100,8 @@ def test_has_vector_search_index_returns_true_for_unsupported_search_indexes():
 
 
 def test_has_vector_search_index_returns_false_for_transient_failure():
-    collection = _FakeCollection(list_error=OperationFailure("network timeout", code=89))
+    collection = _FakeCollection(
+        list_error=OperationFailure("network timeout", code=89)
+    )
 
     assert asyncio.run(db._has_vector_search_index(collection)) is False
