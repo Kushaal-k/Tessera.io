@@ -9,17 +9,19 @@ import {
 } from "@tessera/collaboration";
 import type { Participant, SyncConnectionConfig } from "@tessera/shared-types";
 import type { Awareness } from "y-protocols/awareness";
-
+export type ConnectionStatus = 'connected' | 'disconnected' | 'reconnecting';
 interface UseCollaborationReturn {
   readonly ydoc: Y.Doc | null;
   readonly ytext: Y.Text | null;
   readonly awareness: Awareness | null;
   readonly connected: boolean;
+  readonly connectionStatus: ConnectionStatus;
   readonly socket: Socket | null;
 }
 
 export function useCollaboration(config: SyncConnectionConfig): UseCollaborationReturn {
   const [connected, setConnected] = useState(false);
+  const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>('disconnected');
   const providerRef = useRef<TesseraSocketProvider | null>(null);
   const socketRef = useRef<Socket | null>(null);
   const docRef = useRef<ReturnType<typeof createCollaborationDoc> | null>(null);
@@ -74,6 +76,7 @@ export function useCollaboration(config: SyncConnectionConfig): UseCollaboration
 
     socket.on("connect", () => {
       setConnected(true);
+      setConnectionStatus('connected');
       socket.emit("join-room", {
         roomId: config.roomId,
         participant: config.participant,
@@ -89,6 +92,11 @@ export function useCollaboration(config: SyncConnectionConfig): UseCollaboration
 
     socket.on("disconnect", () => {
       setConnected(false);
+      setConnectionStatus('disconnected');
+    });
+
+    socket.on("reconnect_attempt", () => {
+      setConnectionStatus('reconnecting');
     });
 
     setYdoc(collabDoc.ydoc);
@@ -98,7 +106,7 @@ export function useCollaboration(config: SyncConnectionConfig): UseCollaboration
     return cleanup;
   }, [config.serverUrl, config.roomId, config.participant, cleanup]);
 
-  return { ydoc, ytext, awareness, connected, socket: socketInstance };
+  return { ydoc, ytext, awareness, connected, connectionStatus, socket: socketInstance };
 }
 
 export function createDefaultParticipant(overrides?: Partial<Participant>): Participant {
