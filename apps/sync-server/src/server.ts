@@ -29,11 +29,22 @@ interface RoomState {
   // heartbeat-based presence tracking.
   readonly participants: Map<string, ParticipantPresence>;
 }
+
+// Participants that have not sent a heartbeat within this
+// interval are considered stale and will be removed.
+const PRESENCE_TIMEOUT_MS = 60_000;
+
+// Frequency of stale participant cleanup checks.
+const PRESENCE_CLEANUP_INTERVAL_MS = 30_000;
+
 const PORT = Number(process.env["PORT"] ?? 4000);
 const CORS_ORIGIN = process.env["CORS_ORIGIN"] ?? "http://localhost:3000";
 const REDIS_HOST = process.env["REDIS_HOST"] ?? "127.0.0.1";
 const REDIS_PORT = Number(process.env["REDIS_PORT"] ?? 6379);
 
+// Active collaboration rooms maintained in-memory.
+// Presence cleanup periodically scans these rooms and removes
+// participants that stop sending heartbeats.
 const rooms = new Map<string, RoomState>();
 
 function getOrCreateRoom(roomId: string): RoomState {
@@ -73,6 +84,33 @@ const executionQueue = new Queue<ExecutionTask>(QUEUE_NAME, { connection: connec
 // internally, so there is no risk of cross-job event mixups.
 const queueEvents = new QueueEvents(QUEUE_NAME, { connection: connectionOptions });
 
+// Periodically remove stale participants that have stopped
+// sending heartbeats.
+const presenceCleanupTimer = setInterval(
+  cleanupStaleParticipants,
+  PRESENCE_CLEANUP_INTERVAL_MS,
+
+);
+
+
+// Remove participants whose heartbeat timestamps have expired.
+// This protects against ghost users caused by network drops,
+// browser crashes, and missed disconnect events.
+function cleanupStaleParticipants(): void {
+  const now = Date.now();
+  for (const [, room] of rooms) {
+    for (const [socketId, presence] of room.participants) {
+      if (now - presence.lastSeen > PRESENCE_TIMEOUT_MS) {
+        room.participants.delete(socketId);
+        console.log(
+          `[presence] participant expired [socket=${socketId}]`
+        );
+      }
+    }
+
+  }
+}
+
 io.on("connection", (socket) => {
   let currentRoomId: string | null = null;
   let currentParticipant: Participant | null = null;
@@ -101,6 +139,8 @@ io.on("connection", (socket) => {
     const stateVector = Y.encodeStateVector(room.doc);
     socket.emit("sync-step-1", stateVector);
   });
+
+
 
   // Refresh participant liveness whenever a heartbeat arrives.
   // This timestamp will later be used by the cleanup scheduler
@@ -220,11 +260,16 @@ io.on("connection", (socket) => {
   });
 });
 
+
+
 server.listen(PORT, () => {
   console.log(`sync-server listening on :${String(PORT)}`);
 });
 
 async function gracefulShutdown() {
+  // Stop stale participant cleanup before shutdown.
+  clearInterval(presenceCleanupTimer);
+
   console.log("shutting down sync-server…");
   try {
     await Promise.all([executionQueue.close(), queueEvents.close()]);
