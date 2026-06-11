@@ -25,16 +25,15 @@ export function App() {
   const [isRunning, setIsRunning] = useState(false);
   const [isAiPanelOpen, setIsAiPanelOpen] = useState(false);
   const [output, setOutput] = useState<ExecutionResult | null>(null);
-const [showMinimap, setShowMinimap] = useState(true);
-const [fontSize, setFontSize] = useState(14);
+  const [showMinimap, setShowMinimap] = useState(true);
+  const [fontSize, setFontSize] = useState(14);
 
-type ActiveParticipant = {
+  type ActiveParticipant = {
   clientId: number;
   displayName: string;
 };
 
 const [participants, setParticipants] = useState<ActiveParticipant[]>([]);
-
   const config = useMemo<SyncConnectionConfig>(
     () => ({
       serverUrl: SYNC_SERVER_URL,
@@ -66,34 +65,34 @@ const [participants, setParticipants] = useState<ActiveParticipant[]>([]);
 
     const updateParticipants = () => {
       const activeParticipants = Array.from(
-  awareness.getStates().entries(),
-)
-  .map(([clientId, state]) => {
-    const participant = (
-      state as {
-        participant?: {
-          displayName?: string;
-        };
-      }
-    ).participant;
+        awareness.getStates().entries(),
+      )
+        .map(([clientId, state]) => {
+          const participant = (
+            state as {
+              participant?: {
+                displayName?: string;
+              };
+            }
+          ).participant;
 
-    if (!participant?.displayName) {
-      return null;
-    }
+          if (!participant?.displayName) {
+            return null;
+          }
 
-    return {
-      clientId,
-      displayName: participant.displayName,
-    };
-  })
-  .filter(
-    (
-      participant,
-    ): participant is ActiveParticipant =>
-      participant !== null,
-  );
+          return {
+            clientId,
+            displayName: participant.displayName,
+          };
+        })
+        .filter(
+          (
+            participant,
+          ): participant is ActiveParticipant =>
+            participant !== null,
+        );
 
-setParticipants(activeParticipants);
+      setParticipants(activeParticipants);
     };
 
     updateParticipants();
@@ -204,34 +203,33 @@ setParticipants(activeParticipants);
       {/* Main content */}
       <div className="flex flex-1 overflow-hidden">
         {/* Sidebar */}
-            <div className="border-t border-[var(--color-border)] pt-4">
-              <div className="mt-6">
-  <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-    Collaborators
-  </p>
+        <div className="border-t border-[var(--color-border)] pt-4">
+          <div className="mt-6">
+            <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+              Collaborators
+            </p>
 
-  <div className="mt-3 space-y-1">
-    {participants.length > 0 ? (
-      participants.map((participant) => (
-        <div
-          key={participant.clientId}
-          className="rounded px-2 py-1 text-sm text-slate-300 bg-[var(--color-bg)] border border-[var(--color-border)]"
-        >
-          👤 {participant.displayName}
-        </div>
-      ))
-    ) : (
-      <div className="px-2 py-1 text-sm text-slate-500">
-        No active collaborators
-      </div>
-    )}
-  </div>
-</div>
+            <div className="mt-3 space-y-1">
+              {participants.length > 0 ? (
+                participants.map((participant) => (
+                  <div
+                    key={participant.clientId}
+                    className="rounded px-2 py-1 text-sm text-slate-300 bg-[var(--color-bg)] border border-[var(--color-border)]"
+                  >
+                    👤 {participant.displayName}
+                  </div>
+                ))
+              ) : (
+                <div className="px-2 py-1 text-sm text-slate-500">
+                  No active collaborators
+                </div>
+              )}
             </div>
+          </div>
+        </div>
 
 
-
-
+        
         {/* Editor */}
         <main className="flex-1 overflow-hidden">
           {ytext && awareness ? (
