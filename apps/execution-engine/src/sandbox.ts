@@ -7,7 +7,7 @@ const LANGUAGE_IMAGES: Record<SupportedLanguage, string> = {
   typescript: "node:20-slim",
   python: "python:3.12-slim",
   cpp: "gcc:14",
-  java: "openjdk:17-slim"
+  java: "openjdk:17-slim",
   rust: "rust:1.75-slim",
 };
 
