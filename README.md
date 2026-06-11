@@ -143,11 +143,6 @@ For the smoothest Windows experience, use Windows 11, PowerShell, and Docker Des
 node --version
 npm --version
 docker version
-py -3.11 --version
-```
-
-If `py -3.11` is not available, use:
-```powershell
 python --version
 ```
 
@@ -168,13 +163,13 @@ docker start tessera-redis tessera-mongo
 3. **Set up the Python AI service:**
 ```powershell
 cd apps/ai-service
-py -3.11 -m venv .venv
+python -m venv .venv
 .\.venv\Scripts\Activate.ps1
 pip install -r requirements.txt
 cd ..\..
 ```
 
-If `py -3.11` is unavailable, replace it with `python`. If PowerShell blocks virtual environment activation, allow scripts for the current PowerShell session only:
+If PowerShell blocks virtual environment activation, allow scripts for the current PowerShell session only:
 ```powershell
 Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
 ```
