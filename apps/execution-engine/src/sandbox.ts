@@ -75,7 +75,7 @@ export async function executeInSandbox(task: ExecutionTask): Promise<ExecutionRe
           "no-new-privileges:true",
         ],
         Tmpfs: {
-          "/tmp": "size=64M,noexec,nosuid",
+          "/tmp": "size=64M,nosuid",
         },
         AutoRemove: false,
       },
