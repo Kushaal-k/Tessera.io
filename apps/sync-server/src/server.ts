@@ -13,12 +13,22 @@ import type {
   ExecutionResult,
 } from "@tessera/shared-types";
 
+// Tracks participant metadata together with the most recent
+// heartbeat timestamp used for presence reconciliation.
+
+interface ParticipantPresence {
+  participant: Participant;
+  lastSeen: number;
+}
+
 interface RoomState {
   readonly doc: Y.Doc;
   readonly awareness: Awareness;
-  readonly participants: Map<string, Participant>;
+  // Active participants keyed by socket.id.
+  // Each entry stores liveness information used for
+  // heartbeat-based presence tracking.
+  readonly participants: Map<string, ParticipantPresence>;
 }
-
 const PORT = Number(process.env["PORT"] ?? 4000);
 const CORS_ORIGIN = process.env["CORS_ORIGIN"] ?? "http://localhost:3000";
 const REDIS_HOST = process.env["REDIS_HOST"] ?? "127.0.0.1";
@@ -73,18 +83,40 @@ io.on("connection", (socket) => {
 
     currentRoomId = roomId;
     currentParticipant = participant;
-    room.participants.set(socket.id, participant);
-
+    room.participants.set(socket.id, {
+      participant,
+      lastSeen: Date.now(),
+    });
     void socket.join(roomId);
 
     socket.emit("room-joined", {
       roomId,
-      participants: Array.from(room.participants.values()),
+      participants: Array.from(
+        // Initialize participant presence tracking when a user joins.
+        // lastSeen is refreshed by future heartbeat events.
+        room.participants.values(),
+      ).map((presence) => presence.participant),
     });
 
     const stateVector = Y.encodeStateVector(room.doc);
     socket.emit("sync-step-1", stateVector);
   });
+
+  // Refresh participant liveness whenever a heartbeat arrives.
+  // This timestamp will later be used by the cleanup scheduler
+  // to remove stale participants and awareness states.
+  socket.on("presence-heartbeat", () => {
+    if (!currentRoomId) return;
+
+    const room = rooms.get(currentRoomId);
+    if (!room) return;
+
+    const presence = room.participants.get(socket.id);
+    if (!presence) return;
+
+    presence.lastSeen = Date.now();
+  });
+
 
   socket.on("sync-step-1", (data) => {
     if (!currentRoomId) return;

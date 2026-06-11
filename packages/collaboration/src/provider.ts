@@ -28,6 +28,7 @@ export class TesseraSocketProvider {
     this.bindSocketListeners();
     this.bindDocListeners();
     this.sendSyncStep1();
+    this.startHeartbeat();
   }
 
   get isSynced(): boolean {
@@ -35,6 +36,11 @@ export class TesseraSocketProvider {
   }
 
   destroy(): void {
+    // Stop sending presence heartbeats after provider shutdown.
+    if (this.heartbeatTimer) {
+      clearInterval(this.heartbeatTimer);
+      this.heartbeatTimer = null;
+    }
     if (this.destroyed) return;
     this.destroyed = true;
 
@@ -52,23 +58,40 @@ export class TesseraSocketProvider {
     this.socket.off("awareness-update", this.handleAwarenessRemoteUpdate);
   }
 
-  /**
+/**
  * Deletes all content from the shared Monaco text in a single atomic
  * Yjs transaction, propagating the deletion to all synced clients via
  * the existing sync-update socket pipeline.
  */
-  clearLocalDoc(): void {
-    if (this.destroyed) return;
-    const ytext = this.ydoc.getText("monaco");
-    if (ytext.length === 0) return;
-    this.ydoc.transact(() => {
-      ytext.delete(0, ytext.length);
-    });
-  }
+clearLocalDoc(): void {
+  if (this.destroyed) return;
+
+  const ytext = this.ydoc.getText("monaco");
+  if (ytext.length === 0) return;
+
+  this.ydoc.transact(() => {
+    ytext.delete(0, ytext.length);
+  });
+}
+
+// Periodically notify the sync server that this participant
+// is still active. These heartbeats are used for presence
+// reconciliation and stale participant cleanup.
+private static readonly HEARTBEAT_INTERVAL_MS = 15_000;
+
+private heartbeatTimer: ReturnType<typeof setInterval> | null = null;
 
   private sendSyncStep1(): void {
     const stateVector = Y.encodeStateVector(this.ydoc);
     this.socket.emit("sync-step-1", stateVector);
+  }
+
+  // Begin periodically reporting participant liveness to the
+  // sync server.
+  private startHeartbeat(): void {
+    this.heartbeatTimer = setInterval(() => {
+      this.socket.emit("presence-heartbeat");
+    }, TesseraSocketProvider.HEARTBEAT_INTERVAL_MS);
   }
 
   private bindSocketListeners(): void {
