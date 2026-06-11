@@ -16,7 +16,7 @@
     "dev": "tsc --project tsconfig.build.json --watch",
     "typecheck": "tsc --noEmit",
     "clean": "rm -rf dist",
-    "lint": "echo 'lint not configured yet'"
+    "lint": "eslint src --ext .ts"
   },
   "dependencies": {
     "@tessera/shared-types": "*",
