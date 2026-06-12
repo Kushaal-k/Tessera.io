@@ -140,8 +140,13 @@ export async function executeInSandbox(
       StopTimeout: Math.ceil(task.timeoutMs / 1000),
     });
 
-    if (task.language === "cpp" || task.language === "java") {
-      const filename = task.language === "cpp" ? "main.cpp" : "Main.java";
+    if (task.language === "cpp" || task.language === "java" || task.language === "rust") {
+      const filename =
+        task.language === "cpp"
+          ? "main.cpp"
+          : task.language === "java"
+            ? "Main.java"
+            : "main.rs";
       const tarPack = tar.pack();
 
       const tarPromise = new Promise<Buffer>((resolve, reject) => {
