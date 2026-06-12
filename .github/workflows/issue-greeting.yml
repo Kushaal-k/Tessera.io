@@ -26,6 +26,6 @@ jobs:
           Comment \`/claim\` below and our bot will automatically assign this issue to you.
 
           ### 📖 Before you start
-          Please read our [Contributing Guide](https://github.com/${{ github.repository }}/blob/main/CONTRIBUTING.md) for setup instructions, branching conventions, and commit sign-off requirements.
+          Please read our [Contributing Guide](https://github.com/${{ github.repository }}/blob/main/CONTRIBUTING.md) for setup instructions, branching conventions, contribution guidelines, and pull request requirements.
 
           Happy contributing! 🎉"

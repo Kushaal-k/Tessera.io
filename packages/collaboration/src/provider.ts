@@ -15,6 +15,11 @@ export class TesseraSocketProvider {
   private synced = false;
   private destroyed = false;
 
+  private awarenessThrottleTimer: ReturnType<typeof setTimeout> | null = null;
+  private pendingAwarenessClients = new Set<number>();
+  
+  private static readonly AWARENESS_THROTTLE_MS = 50;
+
   constructor(options: TesseraProviderOptions) {
     this.socket = options.socket;
     this.ydoc = options.ydoc;
@@ -32,6 +37,11 @@ export class TesseraSocketProvider {
   destroy(): void {
     if (this.destroyed) return;
     this.destroyed = true;
+
+    if (this.awarenessThrottleTimer) {
+      clearTimeout(this.awarenessThrottleTimer);
+      this.awarenessThrottleTimer = null;
+    }
 
     this.ydoc.off("update", this.handleDocUpdate);
     this.awareness.off("update", this.handleAwarenessLocalUpdate);
@@ -102,11 +112,30 @@ export class TesseraSocketProvider {
     updated: number[];
     removed: number[];
   }): void => {
-    const changedClients = [...added, ...updated, ...removed];
-    const encoded = encodeAwarenessUpdate(this.awareness, changedClients);
-    this.socket.emit("awareness-update", encoded);
-  };
+  [...added, ...updated, ...removed].forEach((clientId) => {
+    this.pendingAwarenessClients.add(clientId);
+  });
 
+  if (this.awarenessThrottleTimer) {
+    return;
+  }
+
+  this.awarenessThrottleTimer = setTimeout(() => {
+    const changedClients = [...this.pendingAwarenessClients];
+
+    if (changedClients.length > 0) {
+      const encoded = encodeAwarenessUpdate(
+        this.awareness,
+        changedClients,
+      );
+
+      this.socket.emit("awareness-update", encoded);
+    }
+
+    this.pendingAwarenessClients.clear();
+    this.awarenessThrottleTimer = null;
+  }, TesseraSocketProvider.AWARENESS_THROTTLE_MS);
+};
   private readonly handleAwarenessRemoteUpdate = (data: Uint8Array): void => {
     try {
       applyAwarenessUpdate(this.awareness, new Uint8Array(data), this);
