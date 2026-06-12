@@ -51,6 +51,8 @@ export interface ExecutionResult {
   readonly exitCode: number | null;
   /** Wall-clock execution duration in milliseconds. */
   readonly durationMs: number;
+  /** Participant who triggered this execution. */
+  readonly triggeredBy?: Participant;
 }
 
 /**
@@ -106,6 +108,9 @@ export interface SyncServerToClientEvents {
     readonly participants: readonly Participant[];
   }) => void;
   readonly "execution-result": (result: ExecutionResult) => void;
+  readonly "execution-started": (payload: {
+    readonly participant: Participant;
+  }) => void;
 }
 
 export interface SyncConnectionConfig {
