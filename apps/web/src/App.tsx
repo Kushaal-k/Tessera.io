@@ -25,15 +25,15 @@ export function App() {
   const [isRunning, setIsRunning] = useState(false);
   const [isAiPanelOpen, setIsAiPanelOpen] = useState(false);
   const [output, setOutput] = useState<ExecutionResult | null>(null);
-  const [showMinimap] = useState(true);
-const [fontSize] = useState(14);
+  const [showMinimap, setShowMinimap] = useState(true);
+  const [fontSize, setFontSize] = useState(14);
 
   type ActiveParticipant = {
-  clientId: number;
-  displayName: string;
-};
+    clientId: number;
+    displayName: string;
+  };
 
-const [participants, setParticipants] = useState<ActiveParticipant[]>([]);
+  const [participants, setParticipants] = useState<ActiveParticipant[]>([]);
   const config = useMemo<SyncConnectionConfig>(
     () => ({
       serverUrl: SYNC_SERVER_URL,
@@ -203,7 +203,18 @@ const [participants, setParticipants] = useState<ActiveParticipant[]>([]);
       {/* Main content */}
       <div className="flex flex-1 overflow-hidden">
         {/* Sidebar */}
-        <div className="border-t border-[var(--color-border)] pt-4">
+        <aside className="w-56 shrink-0 border-r border-[var(--color-border)] bg-[var(--color-surface)] p-3 flex flex-col justify-between">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+              Explorer
+            </p>
+            <div className="mt-3 space-y-1">
+              <div className="rounded px-2 py-1 text-sm font-medium text-tessera-400 bg-tessera-500/10 border border-tessera-500/20">
+                ≡ƒôä {FILE_NAMES[language]}
+              </div>
+            </div>
+          </div>
+
           <div className="mt-6">
             <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">
               Collaborators
@@ -226,10 +237,54 @@ const [participants, setParticipants] = useState<ActiveParticipant[]>([]);
               )}
             </div>
           </div>
-        </div>
 
+          <div className="border-t border-[var(--color-border)] pt-4">
+            <p className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-3">
+              Editor Settings
+            </p>
+            <div className="flex flex-col gap-3">
+              <div className="flex items-center justify-between">
+                <label htmlFor="minimap-toggle" className="text-xs font-medium text-slate-300 cursor-pointer select-none">
+                  Show Minimap
+                </label>
+                <div className="relative inline-flex items-center">
+                  <input
+                    type="checkbox"
+                    id="minimap-toggle"
+                    checked={showMinimap}
+                    onChange={(e) => setShowMinimap(e.target.checked)}
+                    className="sr-only peer"
+                  />
+                  <div className="w-9 h-5 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-tessera-600 cursor-pointer"></div>
+                </div>
+              </div>
 
-        
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-medium text-slate-300">Font Size</span>
+                <div className="flex items-center gap-1.5">
+                  <button
+                    onClick={() => setFontSize((prev) => Math.max(10, prev - 1))}
+                    disabled={fontSize <= 10}
+                    className="w-6 h-6 flex items-center justify-center rounded border border-[var(--color-border)] bg-[var(--color-bg)] text-xs text-slate-300 hover:text-white hover:border-tessera-500 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:border-[var(--color-border)] disabled:hover:text-slate-300 select-none transition-all active:scale-95"
+                  >
+                    A-
+                  </button>
+                  <span className="text-xs font-mono font-medium text-slate-200 min-w-[28px] text-center">
+                    {fontSize}px
+                  </span>
+                  <button
+                    onClick={() => setFontSize((prev) => Math.min(24, prev + 1))}
+                    disabled={fontSize >= 24}
+                    className="w-6 h-6 flex items-center justify-center rounded border border-[var(--color-border)] bg-[var(--color-bg)] text-xs text-slate-300 hover:text-white hover:border-tessera-500 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:border-[var(--color-border)] disabled:hover:text-slate-300 select-none transition-all active:scale-95"
+                  >
+                    A+
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </aside>
+
         {/* Editor */}
         <main className="flex-1 overflow-hidden">
           {ytext && awareness ? (
@@ -246,7 +301,7 @@ const [participants, setParticipants] = useState<ActiveParticipant[]>([]);
                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
               </svg>
-              Connecting to collaboration server…
+              Connecting to collaboration serverΓÇª
             </div>
           )}
         </main>
@@ -288,6 +343,7 @@ const [participants, setParticipants] = useState<ActiveParticipant[]>([]);
           )}
         </div>
       </div>
+
 
       <SidePanel
         open={isAiPanelOpen}
