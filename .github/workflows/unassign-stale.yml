@@ -22,7 +22,7 @@ jobs:
           
           # Find open assigned issues not updated in the last 3 days
           # We use `jq` to extract just the issue numbers
-          STALE_ISSUES=$(gh issue list --search "is:issue is:open has:assignee updated:<=$DATE_LIMIT" --json number -q '.[].number')
+          STALE_ISSUES=$(gh issue list --repo "$GITHUB_REPOSITORY" --search "is:issue is:open has:assignee updated:<=$DATE_LIMIT" --json number -q '.[].number')
           
           if [ -z "$STALE_ISSUES" ]; then
             echo "No stale assigned issues found."
