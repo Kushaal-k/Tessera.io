@@ -19,20 +19,36 @@
 }
 
 :root {
+
   line-height: 1.5;
   font-weight: 400;
+  color-scheme: light;
+
+  --color-bg: #f8fafc;
+  --color-surface: #ffffff;
+  --color-border: #e2e8f0;
+  --color-text: #0f172a;
+
+}
+
+[data-theme="dark"],
+.dark {
   color-scheme: dark;
+  line-height: 1.5;
+  font-weight: 400;
+
 
   --color-bg: #0f1117;
   --color-surface: #161822;
   --color-border: #2a2d3a;
+  --color-text: #e2e8f0;
 }
 
 body {
   margin: 0;
   min-height: 100vh;
   background-color: var(--color-bg);
-  color: #e2e8f0;
+  color: var(--color-text);
 }
 
 #root {

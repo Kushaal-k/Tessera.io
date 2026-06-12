@@ -24,15 +24,14 @@ export function SidePanel({
       aria-hidden={!open}
       aria-label={title}
       inert={!open ? true : undefined}
-      className={`fixed inset-y-0 right-0 z-40 flex w-full max-w-md transform flex-col border-l border-[var(--color-border)] bg-[var(--color-surface)] shadow-2xl shadow-black/40 transition-transform duration-200 ease-out ${
-        open ? "translate-x-0" : "pointer-events-none translate-x-full"
-      } ${className}`}
+      className={`fixed inset-y-0 right-0 z-40 flex w-full max-w-md transform flex-col border-l border-[var(--color-border)] bg-[var(--color-surface)] shadow-2xl shadow-black/40 transition-transform duration-200 ease-out ${open ? "translate-x-0" : "pointer-events-none translate-x-full"
+        } ${className}`}
     >
       <header className="flex min-h-14 items-start justify-between gap-4 border-b border-[var(--color-border)] px-4 py-3">
         <div className="min-w-0">
-          <h2 className="truncate text-sm font-semibold text-white">{title}</h2>
+          <h2 className="truncate text-sm font-semibold text-[var(--color-text)]">{title}</h2>
           {description ? (
-            <p className="mt-0.5 line-clamp-2 text-xs text-slate-400">
+            <p className="mt-0.5 line-clamp-2 text-xs text-[var(--color-text-muted)]">
               {description}
             </p>
           ) : null}
@@ -41,7 +40,7 @@ export function SidePanel({
           type="button"
           aria-label={`Close ${title}`}
           onClick={onClose}
-          className="grid h-8 w-8 shrink-0 place-items-center rounded border border-[var(--color-border)] bg-[var(--color-bg)] text-lg leading-none text-slate-300 transition hover:border-tessera-500 hover:text-white focus:outline-none focus:ring-2 focus:ring-tessera-500"
+          className="grid h-8 w-8 shrink-0 place-items-center rounded border border-[var(--color-border)] bg-[var(--color-bg)] text-lg leading-none text-[var(--color-text-secondary)] transition hover:border-tessera-500 hover:text-[var(--color-text)] focus:outline-none focus:ring-2 focus:ring-tessera-500"
         >
           ×
         </button>
