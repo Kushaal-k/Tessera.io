@@ -25,8 +25,8 @@ export function App() {
   const [isRunning, setIsRunning] = useState(false);
   const [isAiPanelOpen, setIsAiPanelOpen] = useState(false);
   const [output, setOutput] = useState<ExecutionResult | null>(null);
-  const [showMinimap, setShowMinimap] = useState(true);
-  const [fontSize, setFontSize] = useState(14);
+  const [showMinimap] = useState(true);
+const [fontSize] = useState(14);
 
   type ActiveParticipant = {
   clientId: number;
