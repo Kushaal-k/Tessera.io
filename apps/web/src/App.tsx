@@ -1,6 +1,7 @@
 import { useMemo, useState, useEffect } from "react";
 import { SidePanel } from "@tessera/ui-components";
 import { CollaborativeEditor } from "./components/CollaborativeEditor.js";
+import { ShortcutsModal } from "./components/ShortcutsModal.js";
 import {
   useCollaboration,
   createDefaultParticipant,
@@ -24,6 +25,7 @@ export function App() {
   const [language, setLanguage] = useState<SupportedLanguage>("typescript");
   const [isRunning, setIsRunning] = useState(false);
   const [isAiPanelOpen, setIsAiPanelOpen] = useState(false);
+  const [isShortcutsOpen, setIsShortcutsOpen] = useState(false);
   const [output, setOutput] = useState<ExecutionResult | null>(null);
   const [showMinimap, setShowMinimap] = useState(true);
   const [fontSize, setFontSize] = useState(14);
@@ -53,6 +55,19 @@ export function App() {
       socket.off("execution-result", handleExecutionResult);
     };
   }, [socket]);
+
+
+  // Open shortcuts panel on Ctrl+/
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "/" && (e.ctrlKey || e.metaKey)) {
+        e.preventDefault();
+        setIsShortcutsOpen((prev) => !prev);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
 
   const handleRunCode = () => {
     if (!socket || !ytext || isRunning) return;
@@ -130,6 +145,16 @@ export function App() {
             <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
             </svg>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setIsShortcutsOpen(true)}
+            className="flex items-center justify-center h-7 w-7 rounded border border-[var(--color-border)] bg-[var(--color-bg)] text-sm font-bold text-slate-400 hover:text-white hover:border-tessera-500 transition"
+            title="Keyboard shortcuts (Ctrl+/)"
+            aria-label="Open keyboard shortcuts panel"
+          >
+            ?
           </button>
 
           <button
@@ -272,6 +297,11 @@ export function App() {
           )}
         </div>
       </div>
+
+      <ShortcutsModal
+        open={isShortcutsOpen}
+        onClose={() => setIsShortcutsOpen(false)}
+      />
 
       <SidePanel
         open={isAiPanelOpen}
