@@ -12,10 +12,11 @@ const worker = new Worker<ExecutionTask, ExecutionResult>(
     console.log(`processing job ${job.id ?? "unknown"} [lang=${job.data.language}]`);
     const sandboxPromise = executeInSandbox(job.data);
     const hangTimeout = job.data.timeoutMs + 30_000;
-    const timeout = new Promise<never>((_, reject) =>
-      setTimeout(() => reject(new Error("Sandbox hung indefinitely")), hangTimeout),
-    );
-    return Promise.race([sandboxPromise, timeout]);
+    let timerId: NodeJS.Timeout;
+    const timeout = new Promise<never>((_, reject) => {
+      timerId = setTimeout(() => reject(new Error("Sandbox hung indefinitely")), hangTimeout);
+    });
+    return Promise.race([sandboxPromise, timeout]).finally(() => clearTimeout(timerId));
   },
   {
     connection,
