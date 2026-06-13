@@ -16,7 +16,7 @@ const LANGUAGE_IMAGES: Record<SupportedLanguage, string> = {
   rust: "rust:1.75-slim",
 };
 
-const LANGUAGE_COMMANDS: Record
+const LANGUAGE_COMMANDS: Record<
   SupportedLanguage,
   (code: string) => string[]
 > = {
