@@ -9,13 +9,19 @@ export type SupportedLanguage = "typescript" | "python" | "cpp" | "java" | "rust
 
 /**
  * Status lifecycle of a code execution job.
+ *
+ * "stale" — the result arrived after the CRDT document had advanced past
+ * the epoch that originally triggered the execution.  The output must be
+ * surfaced in a read-only "Stale Execution Log" and must NOT mutate shared
+ * document state.
  */
 export type ExecutionStatus =
   | "queued"
   | "running"
   | "completed"
   | "failed"
-  | "timeout";
+  | "timeout"
+  | "stale";
 
 /**
  * Payload submitted by a client to request code execution.
@@ -33,6 +39,12 @@ export interface ExecutionTask {
   readonly roomId: string;
   /** ISO-8601 timestamp of when the task was submitted. */
   readonly createdAt: string;
+  /**
+   * SHA-256 hex digest of the Yjs state vector at the moment execution was
+   * triggered.  Used by the sync-server fencing mechanism to detect whether
+   * the document has diverged while the sandbox was running.
+   */
+  readonly epochId: string;
 }
 
 /**
@@ -51,6 +63,11 @@ export interface ExecutionResult {
   readonly exitCode: number | null;
   /** Wall-clock execution duration in milliseconds. */
   readonly durationMs: number;
+  /**
+   * The epochId from the originating ExecutionTask.
+   * Echoed back so clients can cross-check against current doc state.
+   */
+  readonly epochId: string;
 }
 
 /**
@@ -93,6 +110,8 @@ export interface SyncClientToServerEvents {
   readonly "execute-code": (payload: {
     readonly code: string;
     readonly language: SupportedLanguage;
+    /** SHA-256 hex digest of the Yjs state vector at trigger time. */
+    readonly epochId: string;
   }) => void;
 }
 

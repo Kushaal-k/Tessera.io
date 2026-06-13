@@ -1,4 +1,5 @@
 import { useMemo, useState, useEffect } from "react";
+import * as Y from "yjs";
 import { SidePanel } from "@tessera/ui-components";
 import { CollaborativeEditor } from "./components/CollaborativeEditor.js";
 import {
@@ -25,6 +26,7 @@ export function App() {
   const [isRunning, setIsRunning] = useState(false);
   const [isAiPanelOpen, setIsAiPanelOpen] = useState(false);
   const [output, setOutput] = useState<ExecutionResult | null>(null);
+  const [staleOutput, setStaleOutput] = useState<ExecutionResult | null>(null);
   const [showMinimap, setShowMinimap] = useState(true);
   const [fontSize, setFontSize] = useState(14);
 
@@ -37,13 +39,19 @@ export function App() {
     [participant],
   );
 
-  const { ytext, awareness, connected, socket } = useCollaboration(config);
+  const { ydoc, ytext, awareness, connected, socket } = useCollaboration(config);
 
   useEffect(() => {
     if (!socket) return;
 
     const handleExecutionResult = (result: ExecutionResult) => {
-      setOutput(result);
+      if (result.status === "stale") {
+        // Doc changed while the sandbox was running — surface in a separate
+        // read-only log, never overwrite the live shared output panel.
+        setStaleOutput(result);
+      } else {
+        setOutput(result);
+      }
       setIsRunning(false);
     };
 
@@ -55,12 +63,29 @@ export function App() {
   }, [socket]);
 
   const handleRunCode = () => {
-    if (!socket || !ytext || isRunning) return;
+    if (!socket || !ytext || !ydoc || isRunning) return;
     setIsRunning(true);
     setOutput(null);
+    setStaleOutput(null);
+
+    // Compute a deterministic epoch fingerprint from the current Yjs state
+    // vector.  The sync-server re-hashes the doc after execution completes
+    // and compares; if they differ the result is marked "stale" and shunted
+    // to the Stale Execution Log instead of the main output panel.
+    const stateVector = Y.encodeStateVector(ydoc);
+    const epochId = Array.from(
+      stateVector.reduce<number[]>((acc, byte, i) => {
+        acc[i % 32] = (acc[i % 32] ?? 0) ^ byte;
+        return acc;
+      }, new Array(32).fill(0) as number[]),
+    )
+      .map((b) => b.toString(16).padStart(2, "0"))
+      .join("");
+
     socket.emit("execute-code", {
       code: ytext.toString(),
       language,
+      epochId,
     });
   };
 
@@ -68,6 +93,7 @@ export function App() {
     if (!ytext) return;
     downloadTextFile(ytext.toString(), FILE_NAMES[language]);
   };
+
   return (
     <div className="flex h-screen flex-col bg-[var(--color-bg)]">
       {/* Header */}
@@ -121,6 +147,7 @@ export function App() {
               </>
             )}
           </button>
+
           {/* Download Button */}
           <button
             onClick={handleDownload}
@@ -272,6 +299,41 @@ export function App() {
           )}
         </div>
       </div>
+
+      {/* Stale Execution Log — only shown when a result arrived after the doc changed */}
+      {staleOutput && (
+        <div className="shrink-0 border-t border-amber-500/40 bg-amber-950/30 flex flex-col p-3 overflow-hidden max-h-40">
+          <div className="flex items-center justify-between border-b border-amber-500/30 pb-2 mb-2">
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-semibold uppercase tracking-wider text-amber-400">
+                ⚠ Stale Execution Log
+              </span>
+              <span className="text-xs text-amber-600">
+                — doc changed during execution; result not applied to shared state
+              </span>
+            </div>
+            <button
+              onClick={() => setStaleOutput(null)}
+              className="text-xs text-amber-600 hover:text-amber-400 transition"
+            >
+              Dismiss
+            </button>
+          </div>
+          <div className="flex-1 overflow-y-auto font-mono text-xs p-2 rounded bg-black/30 border border-amber-500/20">
+            <div className="space-y-1 whitespace-pre-wrap">
+              {staleOutput.stdout && (
+                <div className="text-amber-200/70">{staleOutput.stdout}</div>
+              )}
+              {staleOutput.stderr && (
+                <div className="text-rose-400/70">{staleOutput.stderr}</div>
+              )}
+              {!staleOutput.stdout && !staleOutput.stderr && (
+                <div className="text-amber-700 italic">No output (exit code {staleOutput.exitCode}).</div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       <SidePanel
         open={isAiPanelOpen}
