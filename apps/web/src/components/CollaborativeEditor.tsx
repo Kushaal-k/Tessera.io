@@ -19,7 +19,10 @@ const LANGUAGE_MAP: Record<SupportedLanguage, string> = {
   python: "python",
   cpp: "cpp",
   java: "java",
-  rust: "rust"
+  rust: "rust",
+  javascript: "javascript",
+  go: "go",
+  ruby: "ruby"
 };
 
 export function CollaborativeEditor({

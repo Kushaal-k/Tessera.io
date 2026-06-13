@@ -5,7 +5,7 @@
 /**
  * Supported programming languages for code execution.
  */
-export type SupportedLanguage = "typescript" | "python" | "cpp" | "java" | "rust";
+export type SupportedLanguage = "typescript" | "python" | "cpp" | "java" | "rust" | "javascript" | "go" | "ruby";
 
 /**
  * Status lifecycle of a code execution job.
