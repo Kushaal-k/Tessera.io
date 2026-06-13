@@ -7,19 +7,23 @@ import {
   setLocalParticipant,
   TesseraSocketProvider,
 } from "@tessera/collaboration";
-import type { Participant, SyncConnectionConfig } from "@tessera/shared-types";
+import type {
+  Participant,
+  SyncConnectionConfig,
+  ConnectionStatus,
+} from "@tessera/shared-types";
 import type { Awareness } from "y-protocols/awareness";
 
 interface UseCollaborationReturn {
   readonly ydoc: Y.Doc | null;
   readonly ytext: Y.Text | null;
   readonly awareness: Awareness | null;
-  readonly connected: boolean;
+  readonly connectionStatus: ConnectionStatus;
   readonly socket: Socket | null;
 }
 
 export function useCollaboration(config: SyncConnectionConfig): UseCollaborationReturn {
-  const [connected, setConnected] = useState(false);
+  const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>("disconnected");
   const providerRef = useRef<TesseraSocketProvider | null>(null);
   const socketRef = useRef<Socket | null>(null);
   const docRef = useRef<ReturnType<typeof createCollaborationDoc> | null>(null);
@@ -40,7 +44,7 @@ export function useCollaboration(config: SyncConnectionConfig): UseCollaboration
     docRef.current = null;
 
     awarenessRef.current = null;
-    setConnected(false);
+    setConnectionStatus("disconnected");
     setYdoc(null);
     setYtext(null);
     setAwareness(null);
@@ -73,7 +77,14 @@ export function useCollaboration(config: SyncConnectionConfig): UseCollaboration
     setSocketInstance(socket);
 
     socket.on("connect", () => {
-      setConnected(true);
+      // Destroy the previous provider before creating a new one.
+      // Without this, every reconnect stacks an additional set of
+      // Manager listeners (reconnect_attempt / error / failed) that
+      // all fire on the same socket.io instance, causing duplicate
+      // state updates on every subsequent reconnection cycle.
+      providerRef.current?.destroy();
+
+      setConnectionStatus("connected");
       socket.emit("join-room", {
         roomId: config.roomId,
         participant: config.participant,
@@ -83,12 +94,13 @@ export function useCollaboration(config: SyncConnectionConfig): UseCollaboration
         socket,
         ydoc: collabDoc.ydoc,
         awareness: awarenessInstance,
+        onStatusChange: setConnectionStatus,
       });
       providerRef.current = provider;
     });
 
     socket.on("disconnect", () => {
-      setConnected(false);
+      setConnectionStatus("disconnected");
     });
 
     setYdoc(collabDoc.ydoc);
@@ -98,7 +110,7 @@ export function useCollaboration(config: SyncConnectionConfig): UseCollaboration
     return cleanup;
   }, [config.serverUrl, config.roomId, config.participant, cleanup]);
 
-  return { ydoc, ytext, awareness, connected, socket: socketInstance };
+  return { ydoc, ytext, awareness, connectionStatus, socket: socketInstance };
 }
 
 export function createDefaultParticipant(overrides?: Partial<Participant>): Participant {

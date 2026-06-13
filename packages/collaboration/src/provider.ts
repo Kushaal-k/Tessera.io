@@ -1,29 +1,31 @@
 import * as Y from "yjs";
 import { Awareness, encodeAwarenessUpdate, applyAwarenessUpdate } from "y-protocols/awareness";
 import type { Socket } from "socket.io-client";
+import type { ConnectionStatus } from "@tessera/shared-types";
+
+export type StatusChangeCallback = (status: ConnectionStatus) => void;
 
 export interface TesseraProviderOptions {
   readonly socket: Socket;
   readonly ydoc: Y.Doc;
   readonly awareness: Awareness;
+  /** Called whenever the socket reconnection lifecycle changes state. */
+  readonly onStatusChange?: StatusChangeCallback;
 }
 
 export class TesseraSocketProvider {
   readonly ydoc: Y.Doc;
   readonly awareness: Awareness;
   private readonly socket: Socket;
+  private readonly onStatusChange?: StatusChangeCallback;
   private synced = false;
   private destroyed = false;
-
-  private awarenessThrottleTimer: ReturnType<typeof setTimeout> | null = null;
-  private pendingAwarenessClients = new Set<number>();
-  
-  private static readonly AWARENESS_THROTTLE_MS = 50;
 
   constructor(options: TesseraProviderOptions) {
     this.socket = options.socket;
     this.ydoc = options.ydoc;
     this.awareness = options.awareness;
+    this.onStatusChange = options.onStatusChange;
 
     this.bindSocketListeners();
     this.bindDocListeners();
@@ -38,11 +40,6 @@ export class TesseraSocketProvider {
     if (this.destroyed) return;
     this.destroyed = true;
 
-    if (this.awarenessThrottleTimer) {
-      clearTimeout(this.awarenessThrottleTimer);
-      this.awarenessThrottleTimer = null;
-    }
-
     this.ydoc.off("update", this.handleDocUpdate);
     this.awareness.off("update", this.handleAwarenessLocalUpdate);
 
@@ -50,6 +47,11 @@ export class TesseraSocketProvider {
     this.socket.off("sync-step-2", this.handleSyncStep2);
     this.socket.off("sync-update", this.handleSyncUpdate);
     this.socket.off("awareness-update", this.handleAwarenessRemoteUpdate);
+
+    // Manager-level events — must use socket.io.off(), not socket.off()
+    this.socket.io.off("reconnect_attempt", this.handleReconnectAttempt);
+    this.socket.io.off("reconnect_error", this.handleReconnectError);
+    this.socket.io.off("reconnect_failed", this.handleReconnectFailed);
   }
 
   private sendSyncStep1(): void {
@@ -58,16 +60,24 @@ export class TesseraSocketProvider {
   }
 
   private bindSocketListeners(): void {
+    // Yjs sync events — socket-level
     this.socket.on("sync-step-1", this.handleSyncStep1);
     this.socket.on("sync-step-2", this.handleSyncStep2);
     this.socket.on("sync-update", this.handleSyncUpdate);
     this.socket.on("awareness-update", this.handleAwarenessRemoteUpdate);
+
+    // Reconnect events are Manager-level in socket.io-client v4
+    this.socket.io.on("reconnect_attempt", this.handleReconnectAttempt);
+    this.socket.io.on("reconnect_error", this.handleReconnectError);
+    this.socket.io.on("reconnect_failed", this.handleReconnectFailed);
   }
 
   private bindDocListeners(): void {
     this.ydoc.on("update", this.handleDocUpdate);
     this.awareness.on("update", this.handleAwarenessLocalUpdate);
   }
+
+  // ── Sync handlers ─────────────────────────────────────────────────────────
 
   private readonly handleSyncStep1 = (data: Uint8Array): void => {
     try {
@@ -103,6 +113,8 @@ export class TesseraSocketProvider {
     this.socket.emit("sync-update", update);
   };
 
+  // ── Awareness handlers ────────────────────────────────────────────────────
+
   private readonly handleAwarenessLocalUpdate = ({
     added,
     updated,
@@ -112,35 +124,35 @@ export class TesseraSocketProvider {
     updated: number[];
     removed: number[];
   }): void => {
-  [...added, ...updated, ...removed].forEach((clientId) => {
-    this.pendingAwarenessClients.add(clientId);
-  });
+    const changedClients = [...added, ...updated, ...removed];
+    const encoded = encodeAwarenessUpdate(this.awareness, changedClients);
+    this.socket.emit("awareness-update", encoded);
+  };
 
-  if (this.awarenessThrottleTimer) {
-    return;
-  }
-
-  this.awarenessThrottleTimer = setTimeout(() => {
-    const changedClients = [...this.pendingAwarenessClients];
-
-    if (changedClients.length > 0) {
-      const encoded = encodeAwarenessUpdate(
-        this.awareness,
-        changedClients,
-      );
-
-      this.socket.emit("awareness-update", encoded);
-    }
-
-    this.pendingAwarenessClients.clear();
-    this.awarenessThrottleTimer = null;
-  }, TesseraSocketProvider.AWARENESS_THROTTLE_MS);
-};
   private readonly handleAwarenessRemoteUpdate = (data: Uint8Array): void => {
     try {
       applyAwarenessUpdate(this.awareness, new Uint8Array(data), this);
     } catch (err: unknown) {
       console.error("[TesseraProvider] awareness-update error:", err);
     }
+  };
+
+  // ── Reconnection handlers ─────────────────────────────────────────────────
+
+  private readonly handleReconnectAttempt = (attemptNumber: number): void => {
+    console.warn(`[TesseraProvider] Reconnect attempt #${attemptNumber}`);
+    this.onStatusChange?.("reconnecting");
+  };
+
+  private readonly handleReconnectError = (err: Error): void => {
+    // Per-attempt failure; socket.io will keep retrying until reconnectionAttempts
+    console.error("[TesseraProvider] Reconnect error:", err);
+    this.onStatusChange?.("reconnecting");
+  };
+
+  private readonly handleReconnectFailed = (): void => {
+    // All attempts exhausted — user must reload to restore the session
+    console.error("[TesseraProvider] Reconnect failed — all attempts exhausted.");
+    this.onStatusChange?.("failed");
   };
 }

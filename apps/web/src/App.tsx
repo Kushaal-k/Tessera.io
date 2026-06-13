@@ -37,7 +37,7 @@ export function App() {
     [participant],
   );
 
-  const { ytext, awareness, connected, socket } = useCollaboration(config);
+  const { ytext, awareness, connectionStatus, socket } = useCollaboration(config);
 
   useEffect(() => {
     if (!socket) return;
@@ -98,11 +98,11 @@ export function App() {
           {/* Run Button */}
           <button
             onClick={handleRunCode}
-            disabled={!connected || isRunning}
+            disabled={connectionStatus !== "connected"}
             className={`flex items-center gap-1.5 px-3 py-1 text-sm font-semibold rounded transition shadow-sm ${
               isRunning
                 ? "bg-slate-700 text-slate-400 cursor-not-allowed"
-                : !connected
+                : connectionStatus !== "connected"
                 ? "bg-slate-800 text-slate-500 cursor-not-allowed"
                 : "bg-tessera-600 hover:bg-tessera-500 text-white cursor-pointer active:scale-95"
             }`}
@@ -143,10 +143,24 @@ export function App() {
           {/* Connection Indicator */}
           <div className="flex items-center gap-2 border-l border-[var(--color-border)] pl-4">
             <span
-              className={`inline-block h-2 w-2 rounded-full ${connected ? "bg-emerald-400" : "bg-red-400 animate-pulse"}`}
+              className={`inline-block h-2 w-2 rounded-full ${
+                connectionStatus === "connected"
+                ? "bg-emerald-400"
+                : connectionStatus === "reconnecting"
+                ? "bg-amber-400 animate-pulse"
+                : connectionStatus === "failed"
+                ? "bg-rose-500"
+                : "bg-slate-500 animate-pulse"
+              }`}
             />
             <span className="text-xs text-slate-400 font-medium">
-              {connected ? "Connected" : "Disconnected"}
+              {connectionStatus === "connected"
+                ? "Connected"
+                : connectionStatus === "reconnecting"
+                ? "Reconnecting…"
+                : connectionStatus === "failed"
+                ? "Connection lost"
+                : "Disconnected"}
             </span>
           </div>
         </div>

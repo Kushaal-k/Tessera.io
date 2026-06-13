@@ -18,6 +18,15 @@ export type ExecutionStatus =
   | "timeout";
 
 /**
+ * Real-time connection lifecycle status for collaborative sessions.
+ * - connected    → socket is up and synced
+ * - reconnecting → socket dropped; auto-reconnect in progress
+ * - failed       → all reconnect attempts exhausted; page reload required
+ * - disconnected → offline before first connect, or after clean disconnect
+ */
+export type ConnectionStatus = "connected" | "reconnecting" | "failed" | "disconnected";
+
+/**
  * Payload submitted by a client to request code execution.
  */
 export interface ExecutionTask {

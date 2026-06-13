@@ -10,4 +10,4 @@ export {
 export type { PeerState, AwarenessChangeCallback } from "./awareness.js";
 
 export { TesseraSocketProvider } from "./provider.js";
-export type { TesseraProviderOptions } from "./provider.js";
+export type { TesseraProviderOptions, StatusChangeCallback } from "./provider.js";
