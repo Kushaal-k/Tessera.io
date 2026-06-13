@@ -9,7 +9,9 @@
     "start": "node dist/worker.js",
     "typecheck": "tsc --noEmit",
     "clean": "rm -rf dist",
-    "lint": "echo 'lint not configured yet'"
+    "lint": "echo 'lint not configured yet'",
+    "cleanup": "tsx src/cleanup.ts",
+    "cleanup:docker": "npm run cleanup"
   },
   "dependencies": {
     "@tessera/shared-types": "*",

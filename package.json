@@ -15,7 +15,8 @@
     "test": "turbo run test",
     "lint": "turbo run lint",
     "typecheck": "turbo run typecheck",
-    "clean": "turbo run clean && rm -rf node_modules"
+    "clean": "turbo run clean && rm -rf node_modules",
+    "cleanup": "npm run cleanup --workspace=@tessera/execution-engine"
   },
   "devDependencies": {
     "turbo": "^2.9.16",
