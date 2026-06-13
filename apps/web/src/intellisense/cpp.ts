@@ -86,11 +86,48 @@ function createRange(
   );
 }
 
+function createHashAwareRange(
+  monaco: typeof Monaco,
+  model: Monaco.editor.ITextModel,
+  position: Monaco.Position,
+) {
+  const word = model.getWordUntilPosition(position);
+  const line = model.getLineContent(position.lineNumber);
+  const startColumn =
+    word.startColumn > 1 && line[word.startColumn - 2] === "#"
+      ? word.startColumn - 1
+      : word.startColumn;
+
+  return new monaco.Range(
+    position.lineNumber,
+    startColumn,
+    position.lineNumber,
+    word.endColumn,
+  );
+}
+
+function hasStdNamespacePrefix(
+  model: Monaco.editor.ITextModel,
+  position: Monaco.Position,
+  range: Monaco.IRange,
+) {
+  const line = model.getLineContent(position.lineNumber);
+  const prefix = line.slice(0, range.startColumn - 1);
+
+  return prefix.endsWith("std::");
+}
+
 export function registerCppIntelliSense(monaco: typeof Monaco): Monaco.IDisposable {
   return monaco.languages.registerCompletionItemProvider("cpp", {
     triggerCharacters: ["#", ".", ":", "<"],
     provideCompletionItems(model, position) {
       const range = createRange(monaco, model, position);
+      const includeRange = createHashAwareRange(monaco, model, position);
+      const shouldInsertStlNameOnly = hasStdNamespacePrefix(
+        model,
+        position,
+        range,
+      );
 
       const keywordSuggestions = C_CPP_KEYWORDS.map((keyword) => ({
         label: keyword,
@@ -102,7 +139,9 @@ export function registerCppIntelliSense(monaco: typeof Monaco): Monaco.IDisposab
       const stlSuggestions = STL_SUGGESTIONS.map((symbol) => ({
         label: symbol,
         kind: monaco.languages.CompletionItemKind.Class,
-        insertText: symbol,
+        insertText: shouldInsertStlNameOnly
+          ? symbol.replace("std::", "")
+          : symbol,
         detail: "C++ Standard Library",
         range,
       }));
@@ -113,7 +152,7 @@ export function registerCppIntelliSense(monaco: typeof Monaco): Monaco.IDisposab
           kind: monaco.languages.CompletionItemKind.Snippet,
           insertText: "#include <iostream>",
           detail: "Include iostream",
-          range,
+          range: includeRange,
         },
         {
           label: "main",
