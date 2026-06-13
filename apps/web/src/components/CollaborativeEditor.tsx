@@ -4,6 +4,7 @@ import { MonacoBinding } from "y-monaco";
 import type * as Y from "yjs";
 import type { Awareness } from "y-protocols/awareness";
 import type { editor } from "monaco-editor";
+import { KeyMod, KeyCode } from "monaco-editor";
 import { createRoot, type Root } from "react-dom/client";
 import { SocraticAnnotation } from "@tessera/ui-components";
 import type { SupportedLanguage } from "@tessera/shared-types";
@@ -91,6 +92,7 @@ export function CollaborativeEditor({
           suggestions={suggestions}
           onClose={closeAnnotation}
           onSuggestionClick={(s) => console.log("User selected suggestion:", s)}
+          onSubmit={(text) => console.log("User submitted question:", text)}
         />
       );
     });
@@ -102,15 +104,23 @@ export function CollaborativeEditor({
     
     const action = editorRef.current.addAction({
       id: "ask-socratic-mentor",
-      label: "Ask Socratic Mentor (Prototype)",
+      label: "Ask Socratic Mentor",
       contextMenuGroupId: "navigation",
       contextMenuOrder: 1.5,
+      keybindings: [
+        KeyMod.CtrlCmd | KeyCode.KeyM
+      ],
       run: (ed) => {
         const position = ed.getPosition();
+        const selection = ed.getSelection();
+        const selectedText = selection ? ed.getModel()?.getValueInRange(selection) : "";
+        
         if (position) {
           showSocraticMentor(
             position.lineNumber,
-            "I noticed you're working on this section. Would you like some guidance on how to optimize this function?",
+            selectedText 
+              ? `I noticed you highlighted this code. Would you like some guidance on how to optimize it?` 
+              : `I noticed you're working on this section. Would you like some guidance on how to optimize this function?`,
             ["Yes, help me optimize", "Explain how it works", "What are the edge cases?"]
           );
         }
