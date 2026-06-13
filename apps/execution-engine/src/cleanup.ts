@@ -2,7 +2,7 @@
 
 import Dockerode from "dockerode";
 
-// Initialize Docker with auto-detection (works on Windows & Linux)
+// Initialize Docker with auto-detection
 let docker: Dockerode;
 
 try {
@@ -11,13 +11,6 @@ try {
   console.error("❌ Failed to connect to Docker daemon. Make sure Docker is running.");
   console.error("   Error:", error instanceof Error ? error.message : error);
   process.exit(1);
-}
-
-interface ContainerInfo {
-  id: string;
-  name: string;
-  status: string;
-  created: number;
 }
 
 async function cleanupDeadSandboxContainers(): Promise<void> {
@@ -89,7 +82,7 @@ async function cleanupDeadSandboxContainers(): Promise<void> {
   }
 }
 
-// Run the function directly
-cleanupDeadSandboxContainers();
+// Run the cleanup function
+cleanupDeadSandboxContainers().catch(console.error);
 
 export { cleanupDeadSandboxContainers };
