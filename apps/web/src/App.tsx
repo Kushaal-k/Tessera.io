@@ -27,6 +27,12 @@ export function App() {
   const [output, setOutput] = useState<ExecutionResult | null>(null);
   const [showMinimap, setShowMinimap] = useState(true);
   const [fontSize, setFontSize] = useState(14);
+  
+  // Display name state with localStorage persistence
+  const [displayName, setDisplayName] = useState(() => {
+    return localStorage.getItem('displayName') || `User-${Math.floor(Math.random() * 1000)}`;
+  });
+  const [isNameFocused, setIsNameFocused] = useState(false);
 
   const config = useMemo<SyncConnectionConfig>(
     () => ({
@@ -54,6 +60,23 @@ export function App() {
     };
   }, [socket]);
 
+  // Update awareness when display name changes
+  useEffect(() => {
+    if (awareness) {
+      // Get current user data
+      const localState = awareness.getLocalState();
+      awareness.setLocalState({
+        ...localState,
+        user: {
+          ...localState?.user,
+          name: displayName,
+        },
+      });
+      // Save to localStorage
+      localStorage.setItem('displayName', displayName);
+    }
+  }, [displayName, awareness]);
+
   const handleRunCode = () => {
     if (!socket || !ytext || isRunning) return;
     setIsRunning(true);
@@ -68,6 +91,7 @@ export function App() {
     if (!ytext) return;
     downloadTextFile(ytext.toString(), FILE_NAMES[language]);
   };
+  
   return (
     <div className="flex h-screen flex-col bg-[var(--color-bg)]">
       {/* Header */}
@@ -167,6 +191,88 @@ export function App() {
             </div>
           </div>
 
+          {/* ENHANCED DISPLAY NAME SECTION */}
+          <div className="border-t border-[var(--color-border)] pt-4">
+            {/* Header with icon and badge */}
+            <div className="flex items-center gap-2 mb-3">
+              <div className="w-6 h-6 rounded-full bg-gradient-to-br from-tessera-500 to-tessera-600 flex items-center justify-center shadow-lg">
+                <svg className="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                </svg>
+              </div>
+              <p className="text-xs font-semibold uppercase tracking-wider bg-gradient-to-r from-tessera-400 to-tessera-300 bg-clip-text text-transparent">
+                Your Identity
+              </p>
+              <span className="text-[10px] text-slate-500 ml-auto bg-slate-800/50 px-1.5 py-0.5 rounded-full">
+                ✏️ editable
+              </span>
+            </div>
+            
+            {/* Name input with clear button */}
+            <div className="relative group">
+              <input
+                type="text"
+                value={displayName}
+                onChange={(e) => setDisplayName(e.target.value)}
+                onFocus={() => setIsNameFocused(true)}
+                onBlur={() => setIsNameFocused(false)}
+                placeholder="Enter your display name"
+                maxLength={30}
+                className={`w-full bg-gradient-to-r from-[var(--color-bg)] to-[var(--color-surface)] text-sm text-white rounded-lg px-3 py-2 transition-all duration-200 outline-none ${
+                  isNameFocused 
+                    ? "border-2 border-tessera-500 ring-2 ring-tessera-500/20" 
+                    : "border border-[var(--color-border)] hover:border-tessera-500/50"
+                }`}
+              />
+              {displayName && displayName !== "User-" && (
+                <button
+                  onClick={() => setDisplayName('')}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-red-400 transition-all duration-200 opacity-0 group-hover:opacity-100 focus:opacity-100 hover:scale-110"
+                  title="Clear name"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              )}
+            </div>
+            
+            {/* Live preview and status */}
+            <div className="mt-3 space-y-2">
+              {/* Preview badge */}
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-1.5 bg-[var(--color-bg)] rounded-full px-2 py-0.5 border border-[var(--color-border)]">
+                  <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></div>
+                  <span className="text-[10px] font-mono text-slate-400">live preview</span>
+                </div>
+                <div className="text-[10px] text-slate-500">
+                  {displayName.length}/30
+                </div>
+              </div>
+              
+              {/* Current display name preview */}
+              <div className="bg-gradient-to-r from-tessera-500/5 to-tessera-600/5 rounded-lg p-2 border border-tessera-500/20">
+                <p className="text-[10px] text-slate-400 mb-1">others see you as</p>
+                <div className="flex items-center gap-2">
+                  <div className="w-5 h-5 rounded-full bg-gradient-to-br from-tessera-400 to-tessera-500 flex items-center justify-center">
+                    <span className="text-[10px] font-bold text-white">
+                      {displayName.charAt(0).toUpperCase()}
+                    </span>
+                  </div>
+                  <p className="text-sm font-semibold text-white truncate flex-1">
+                    {displayName || "Anonymous"}
+                  </p>
+                  {displayName && (
+                    <svg className="w-3 h-3 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Editor Settings Section */}
           <div className="border-t border-[var(--color-border)] pt-4">
             <p className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-3">
               Editor Settings
