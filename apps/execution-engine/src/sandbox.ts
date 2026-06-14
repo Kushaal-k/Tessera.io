@@ -16,12 +16,11 @@ const LANGUAGE_IMAGES: Record<SupportedLanguage, string> = {
   rust: "rust:1.75-slim",
 };
 
-const LANGUAGE_COMMANDS: Record<
+const LANGUAGE_COMMANDS: Record
   SupportedLanguage,
   (code: string) => string[]
 > = {
   typescript: (code) => ["node", "--input-type=module", "-e", code],
-
   python: (code) => ["python3", "-c", code],
   cpp: (code) => ["sh", "-c", `echo '${code.replace(/'/g, "'\\''")}' > /tmp/main.cpp && g++ -o /tmp/main /tmp/main.cpp && /tmp/main`],
   java: (code) => ["sh", "-c", `echo '${code.replace(/'/g, "'\\''")}' > /tmp/Main.java && javac /tmp/Main.java -d /tmp && java -cp /tmp Main`],
@@ -145,11 +144,10 @@ export async function executeInSandbox(
 
       return {
         taskId: task.id,
+        epochId: task.epochId, // ← fix 1
         status: "timeout",
         stdout: "",
-        stderr: `Execution timed out after ${String(
-          task.timeoutMs
-        )}ms`,
+        stderr: `Execution timed out after ${String(task.timeoutMs)}ms`,
         exitCode: null,
         durationMs: performance.now() - startTime,
       };
@@ -171,6 +169,7 @@ export async function executeInSandbox(
 
     return {
       taskId: task.id,
+      epochId: task.epochId, // ← fix 2
       status: exitCode === 0 ? "completed" : "failed",
       stdout: logOutput,
       stderr: "",
@@ -183,6 +182,7 @@ export async function executeInSandbox(
 
     return {
       taskId: task.id,
+      epochId: task.epochId, // ← fix 3
       status: "failed",
       stdout: "",
       stderr: message,
