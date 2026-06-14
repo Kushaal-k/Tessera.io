@@ -84,6 +84,7 @@ export function App() {
     if (!ytext) return;
     downloadTextFile(ytext.toString(), FILE_NAMES[language]);
   };
+
   return (
     <div className="flex h-screen flex-col bg-[var(--color-bg)]">
       {/* Header */}
@@ -138,6 +139,7 @@ export function App() {
               </>
             )}
           </button>
+          
           {/* Download Button */}
           <button
             onClick={handleDownload}
@@ -260,7 +262,7 @@ export function App() {
             Execution Output
           </p>
           {output && (
-            <div className="flex gap-4 text-xs font-medium">
+            <div className="flex items-center gap-4 text-xs font-medium">
               <span className={output.status === "completed" ? "text-emerald-400" : "text-rose-400"}>
                 Status: {output.status}
               </span>
@@ -272,9 +274,26 @@ export function App() {
                   Exit Code: {output.exitCode}
                 </span>
               )}
+              
+              {/* Vertical Separator for aesthetics */}
+              <span className="h-3 w-px bg-[var(--color-border)]" />
+
+              {/* Clear Output Button */}
+              <button
+                type="button"
+                onClick={() => setOutput(null)}
+                className="flex items-center gap-1 text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 px-2 py-0.5 rounded transition duration-200 select-none cursor-pointer"
+                title="Clear execution output"
+              >
+                <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+                Clear
+              </button>
             </div>
           )}
         </div>
+        
         <div className="flex-1 overflow-y-auto font-mono text-xs p-2 rounded bg-[var(--color-bg)] border border-[var(--color-border)]">
           {isRunning ? (
             <span className="text-tessera-400 animate-pulse">Running execution sandbox...</span>
