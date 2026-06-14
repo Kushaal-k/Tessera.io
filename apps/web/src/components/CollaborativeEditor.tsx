@@ -36,11 +36,8 @@ export function CollaborativeEditor({
   const handleEditorMount: OnMount = useCallback(
     (mountedEditor, monaco) => {
       editorRef.current = mountedEditor;
-      registerEditorIntelliSense(monaco);
-
       const model = mountedEditor.getModel();
       if (!model) return;
-
       bindingRef.current = new MonacoBinding(
         ytext,
         model,
@@ -60,9 +57,7 @@ export function CollaborativeEditor({
 
   useEffect(() => {
     if (editorRef.current) {
-      editorRef.current.updateOptions({
-        minimap: { enabled: showMinimap },
-      });
+      editorRef.current.updateOptions({ minimap: { enabled: showMinimap } });
     }
   }, [showMinimap]);
 
@@ -73,23 +68,33 @@ export function CollaborativeEditor({
   }, [fontSize]);
 
   return (
-    <Editor
-      height="100%"
-      language={LANGUAGE_MAP[language]}
-      theme="vs-dark"
-      onMount={handleEditorMount}
-      options={{
-        minimap: { enabled: showMinimap },
-        fontSize,
-        fontFamily: "'JetBrains Mono', 'Fira Code', monospace",
-        lineNumbers: "on",
-        renderWhitespace: "selection",
-        scrollBeyondLastLine: false,
-        automaticLayout: true,
-        padding: { top: 16 },
-        cursorBlinking: "smooth",
-        smoothScrolling: true,
-      }}
-    />
+    // fix: wrapper div with aria-label so the editor region is announced
+    <div
+      role="region"
+      aria-label={`${LANGUAGE_MAP[language]} code editor. Press F1 for command palette. Use Escape then Tab to move focus out of the editor.`}
+      className="h-full w-full"
+    >
+      <Editor
+        height="100%"
+        language={LANGUAGE_MAP[language]}
+        theme="vs-dark"
+        onMount={handleEditorMount}
+        options={{
+          minimap: { enabled: showMinimap },
+          fontSize,
+          fontFamily: "'JetBrains Mono', 'Fira Code', monospace",
+          lineNumbers: "on",
+          renderWhitespace: "selection",
+          scrollBeyondLastLine: false,
+          automaticLayout: true,
+          padding: { top: 16 },
+          cursorBlinking: "smooth",
+          smoothScrolling: true,
+          // fix: accessibility options for Monaco
+          accessibilitySupport: "auto",
+          ariaLabel: `${LANGUAGE_MAP[language]} code editor`,
+        }}
+      />
+    </div>
   );
 }
