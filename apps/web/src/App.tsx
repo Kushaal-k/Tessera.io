@@ -18,6 +18,7 @@ const FILE_NAMES: Record<SupportedLanguage, string> = {
   cpp: "main.cpp",
   java: "Main.java",
   rust: "main.rs"
+  go: "main.go",
 };
 
 export function App() {
@@ -108,6 +109,7 @@ export function App() {
               <option value="cpp">C++</option>
               <option value="java">Java</option>
               <option value="rust">Rust</option>
+              <option value="go">Go</option>
             </select>
           </div>
 
