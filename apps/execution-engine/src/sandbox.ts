@@ -22,6 +22,7 @@ const LANGUAGE_COMPILE_COMMANDS: Record<string, string[]> = {
   cpp: ["sh", "-c", "g++ -o /tmp/main /tmp/main.cpp && /tmp/main"],
   java: ["sh", "-c", "javac /tmp/Main.java && java -cp /tmp Main"],
   rust: ["sh", "-c", "rustc /tmp/main.rs -o /tmp/main && /tmp/main"],
+  go: ["sh", "-c", "go build -o /tmp/main /tmp/main.go && /tmp/main"],
 };
 
 const LANGUAGE_COMMANDS: Record<
@@ -33,6 +34,7 @@ const LANGUAGE_COMMANDS: Record<
   cpp: () => LANGUAGE_COMPILE_COMMANDS["cpp"]!,
   java: () => LANGUAGE_COMPILE_COMMANDS["java"]!,
   rust: () => LANGUAGE_COMPILE_COMMANDS["rust"]!,
+  go: () => LANGUAGE_COMPILE_COMMANDS["go"]!,
 };
 
 const DEFAULT_MEMORY_LIMIT_MB = 256;
@@ -109,7 +111,8 @@ export async function executeInSandbox(
   const needsFileUpload =
     task.language === "cpp" ||
     task.language === "java" ||
-    task.language === "rust";
+    task.language === "rust" ||
+    task.language === "go";
 
   let container: Dockerode.Container | undefined;
   let timerId: NodeJS.Timeout | undefined;
@@ -149,7 +152,9 @@ export async function executeInSandbox(
           ? "main.cpp"
           : task.language === "java"
             ? "Main.java"
-            : "main.rs";
+            : task.language === "rust"
+              ? "main.rs"
+              : "main.go";
 
       await uploadSourceFile(container, filename, task.code);
       console.log(`[sandbox] source file uploaded: ${filename} | container: ${container.id}`);
