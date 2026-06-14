@@ -24,14 +24,14 @@ const LANGUAGE_COMPILE_COMMANDS: Record<string, string[]> = {
 };
 
 const LANGUAGE_COMMANDS: Record<
-SupportedLanguage,
+  SupportedLanguage,
   (code: string) => string[]
-    > = {
+> = {
   typescript: (code) => ["node", "--input-type=module", "-e", code],
-    python: (code) => ["python3", "-c", code],
-      cpp: () => LANGUAGE_COMPILE_COMMANDS["cpp"]!,
-        java: () => LANGUAGE_COMPILE_COMMANDS["java"]!,
-          rust: () => LANGUAGE_COMPILE_COMMANDS["rust"]!,
+  python: (code) => ["python3", "-c", code],
+  cpp: () => LANGUAGE_COMPILE_COMMANDS["cpp"]!,
+  java: () => LANGUAGE_COMPILE_COMMANDS["java"]!,
+  rust: () => LANGUAGE_COMPILE_COMMANDS["rust"]!,
 };
 
 const DEFAULT_MEMORY_LIMIT_MB = 256;
