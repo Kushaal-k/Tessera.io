@@ -76,10 +76,7 @@ const LANGUAGE_IMAGES: Record<SupportedLanguage, string> = {
   rust: "rust:1.75-slim",
 };
 
-const LANGUAGE_COMMANDS: Record
-  SupportedLanguage,
-  (code: string) => string[]
-> = {
+const LANGUAGE_COMMANDS: Record<SupportedLanguage, (code: string) => string[]> = {
   typescript: (code) => ["node", "--input-type=module", "-e", code],
   python: (code) => ["python3", "-c", code],
   cpp: (code) => ["sh", "-c", `echo '${code.replace(/'/g, "'\\''")}' > /tmp/main.cpp && g++ -o /tmp/main /tmp/main.cpp && /tmp/main`],
@@ -231,3 +228,4 @@ export async function executeInSandbox(
     }
   }
 }
+
