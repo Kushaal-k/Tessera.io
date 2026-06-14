@@ -15,6 +15,7 @@ const LANGUAGE_IMAGES: Record<SupportedLanguage, string> = {
   cpp: "gcc:14",
   java: "eclipse-temurin:21-jdk-alpine",
   rust: "rust:1.75-slim",
+  go: "golang:1.20-alpine",
 };
 
 const LANGUAGE_COMPILE_COMMANDS: Record<string, string[]> = {
