@@ -8,16 +8,19 @@
     "dev": "tsx watch src/worker.ts",
     "start": "node dist/worker.js",
     "typecheck": "tsc --noEmit",
+    "test": "vitest run --passWithNoTests",
     "clean": "rm -rf dist",
     "lint": "echo 'lint not configured yet'"
   },
   "dependencies": {
     "@tessera/shared-types": "*",
     "bullmq": "^5.77.6",
-    "dockerode": "^5.0.0"
+    "dockerode": "^5.0.0",
+    "tar-stream": "^2.2.0"
   },
   "devDependencies": {
     "@types/dockerode": "^4.0.1",
+    "@types/tar-stream": "3.1.4",
     "tsx": "^4.22.3",
     "typescript": "^6.0.3"
   }
