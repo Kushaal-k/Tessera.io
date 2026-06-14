@@ -145,7 +145,7 @@ export async function executeInSandbox(
     container = await docker.createContainer({
       Image: image,
       Cmd: cmd,
-      User: "sandbox",
+      User: "1000",
       WorkingDir: "/tmp",
       HostConfig: {
         Runtime: config.runtime,
