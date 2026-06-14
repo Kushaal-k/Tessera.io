@@ -193,7 +193,10 @@ export function App() {
                 <label htmlFor="minimap-toggle" className="text-xs font-medium text-slate-300 cursor-pointer select-none">
                   Show Minimap
                 </label>
-                <div className="relative inline-flex items-center">
+                <label
+                  htmlFor="minimap-toggle"
+                  className="relative inline-flex items-center cursor-pointer"
+                >
                   <input
                     type="checkbox"
                     id="minimap-toggle"
@@ -201,8 +204,9 @@ export function App() {
                     onChange={(e) => setShowMinimap(e.target.checked)}
                     className="sr-only peer"
                   />
-                  <div className="w-9 h-5 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-tessera-600 cursor-pointer"></div>
-                </div>
+                  <div className="w-9 h-5 bg-slate-700 peer-focus:outline-none rounded-full peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-tessera-600"></div>
+                </label>
+
               </div>
 
               <div className="flex items-center justify-between">
