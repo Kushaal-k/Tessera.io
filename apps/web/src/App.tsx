@@ -6,6 +6,7 @@ import {
   useCollaboration,
   createDefaultParticipant,
 } from "./hooks/useCollaboration.js";
+import { isMacOS, getExecutionShortcutText } from "./utils/platformDetection.js";
 import type { SyncConnectionConfig, SupportedLanguage, ExecutionResult } from "@tessera/shared-types";
 import { downloadTextFile } from "./utils/downloadUtils.js";
 
@@ -61,6 +62,21 @@ export function App() {
       socket.off("execution-result", handleExecutionResult);
     };
   }, [socket]);
+
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      const isExecutionShortcut = isMacOS() ? event.metaKey : event.ctrlKey;
+      if (isExecutionShortcut && event.key === "Enter") {
+        event.preventDefault();
+        if (!isRunning && connected) {
+          handleRunCode();
+        }
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [socket, ytext, isRunning, connected]);
 
   const handleRunCode = () => {
     if (!socket || !ytext || !ydoc || isRunning) return;
@@ -125,6 +141,7 @@ export function App() {
           <button
             onClick={handleRunCode}
             disabled={!connected || isRunning}
+            title={`Run code (${getExecutionShortcutText()})`}
             className={`flex items-center gap-1.5 px-3 py-1 text-sm font-semibold rounded transition shadow-sm ${
               isRunning
                 ? "bg-slate-700 text-slate-400 cursor-not-allowed"
