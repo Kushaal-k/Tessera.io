@@ -178,10 +178,8 @@ export async function executeInSandbox(
 
     container = await docker.createContainer({
       Image: image,
-      Cmd: needsFileUpload
-        ? ["sleep", String(Math.ceil(task.timeoutMs / 1000) + 5)]
-        : LANGUAGE_COMMANDS[task.language](task.code),
-      User: "sandbox",
+      Cmd: cmd,
+      User: "1000",
       WorkingDir: "/tmp",
       HostConfig: {
         Runtime: config.runtime,
