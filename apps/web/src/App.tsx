@@ -17,7 +17,7 @@ const FILE_NAMES: Record<SupportedLanguage, string> = {
   python: "main.py",
   cpp: "main.cpp",
   java: "Main.java",
-  rust: "main.rs"
+  rust: "main.rs",
   go: "main.go",
 };
 
