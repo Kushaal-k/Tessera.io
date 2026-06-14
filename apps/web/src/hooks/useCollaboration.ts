@@ -12,7 +12,10 @@ import type { Awareness } from "y-protocols/awareness";
 
 interface UseCollaborationReturn {
   readonly ydoc: Y.Doc | null;
+  /** @deprecated Use useWorkspace(ydoc, yworkspace) for multi-file workflows. */
   readonly ytext: Y.Text | null;
+  /** Shared Y.Map backing the workspace file/folder tree. */
+  readonly yworkspace: Y.Map<string> | null;
   readonly awareness: Awareness | null;
   readonly connected: boolean;
   readonly socket: Socket | null;
@@ -26,6 +29,7 @@ export function useCollaboration(config: SyncConnectionConfig): UseCollaboration
   const awarenessRef = useRef<Awareness | null>(null);
   const [ydoc, setYdoc] = useState<Y.Doc | null>(null);
   const [ytext, setYtext] = useState<Y.Text | null>(null);
+  const [yworkspace, setYworkspace] = useState<Y.Map<string> | null>(null);
   const [awareness, setAwareness] = useState<Awareness | null>(null);
   const [socketInstance, setSocketInstance] = useState<Socket | null>(null);
 
@@ -43,6 +47,7 @@ export function useCollaboration(config: SyncConnectionConfig): UseCollaboration
     setConnected(false);
     setYdoc(null);
     setYtext(null);
+    setYworkspace(null);
     setAwareness(null);
     setSocketInstance(null);
   }, []);
@@ -93,12 +98,13 @@ export function useCollaboration(config: SyncConnectionConfig): UseCollaboration
 
     setYdoc(collabDoc.ydoc);
     setYtext(collabDoc.ytext);
+    setYworkspace(collabDoc.yworkspace);
     setAwareness(awarenessInstance);
 
     return cleanup;
   }, [config.serverUrl, config.roomId, config.participant, cleanup]);
 
-  return { ydoc, ytext, awareness, connected, socket: socketInstance };
+  return { ydoc, ytext, yworkspace, awareness, connected, socket: socketInstance };
 }
 
 export function createDefaultParticipant(overrides?: Partial<Participant>): Participant {

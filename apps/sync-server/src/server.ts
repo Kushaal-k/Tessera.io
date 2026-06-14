@@ -143,9 +143,10 @@ io.on("connection", (socket) => {
         timeoutMs: 5000,
         roomId: currentRoomId,
         createdAt: new Date().toISOString(),
+        files: payload.files ?? [],
       };
 
-      console.log(`[sync-server] enqueuing code execution ${taskId} [lang=${payload.language}]`);
+      console.log(`[sync-server] enqueuing code execution ${taskId} [lang=${payload.language}, files=${String(task.files.length)}]`);
       const job = await executionQueue.add("execute", task, { jobId: taskId });
       
       const result = await job.waitUntilFinished(queueEvents);

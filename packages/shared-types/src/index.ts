@@ -17,15 +17,69 @@ export type ExecutionStatus =
   | "failed"
   | "timeout";
 
+// ─────────────────────────────────────────────────────────────
+// Workspace types (multi-file support)
+// ─────────────────────────────────────────────────────────────
+
+/**
+ * A single file in the multi-file workspace.
+ */
+export interface WorkspaceFile {
+  /** Unique stable identifier for this file (UUID). */
+  readonly id: string;
+  /** Display name including extension, e.g. "reader.py". */
+  name: string;
+  /** Programming language derived from the file extension. */
+  language: SupportedLanguage;
+  /**
+   * ID of the parent folder, or null if the file lives at the workspace root.
+   * MVP: single-level folders only (no nested subfolders).
+   */
+  parentFolderId: string | null;
+}
+
+/**
+ * A folder in the multi-file workspace.
+ * MVP: folders may only exist at the workspace root level.
+ */
+export interface WorkspaceFolder {
+  /** Unique stable identifier for this folder (UUID). */
+  readonly id: string;
+  /** Display name of the folder. */
+  name: string;
+}
+
+/**
+ * Full snapshot of the workspace tree.
+ */
+export interface WorkspaceTree {
+  readonly files: readonly WorkspaceFile[];
+  readonly folders: readonly WorkspaceFolder[];
+}
+
+/**
+ * A single file payload sent to the execution sandbox.
+ */
+export interface ExecutionFile {
+  /** Filename (used as path inside /tmp, e.g. "data.csv"). */
+  readonly name: string;
+  /** Full text content of the file. */
+  readonly content: string;
+}
+
+// ─────────────────────────────────────────────────────────────
+// Execution types
+// ─────────────────────────────────────────────────────────────
+
 /**
  * Payload submitted by a client to request code execution.
  */
 export interface ExecutionTask {
   /** Unique identifier for this execution job. */
   readonly id: string;
-  /** Source code to execute inside the sandbox. */
+  /** Source code of the active (entry-point) file to execute inside the sandbox. */
   readonly code: string;
-  /** Language runtime to use. */
+  /** Language runtime to use for the entry-point file. */
   readonly language: SupportedLanguage;
   /** Maximum execution duration in milliseconds. */
   readonly timeoutMs: number;
@@ -33,6 +87,11 @@ export interface ExecutionTask {
   readonly roomId: string;
   /** ISO-8601 timestamp of when the task was submitted. */
   readonly createdAt: string;
+  /**
+   * All workspace files to write into the sandbox /tmp directory
+   * before executing the entry-point. Includes the entry-point file itself.
+   */
+  readonly files: readonly ExecutionFile[];
 }
 
 /**
@@ -52,6 +111,10 @@ export interface ExecutionResult {
   /** Wall-clock execution duration in milliseconds. */
   readonly durationMs: number;
 }
+
+// ─────────────────────────────────────────────────────────────
+// Collaboration types
+// ─────────────────────────────────────────────────────────────
 
 /**
  * Metadata for a collaborative editing room.
@@ -93,6 +156,8 @@ export interface SyncClientToServerEvents {
   readonly "execute-code": (payload: {
     readonly code: string;
     readonly language: SupportedLanguage;
+    /** All workspace files to write into the sandbox before execution. */
+    readonly files: readonly ExecutionFile[];
   }) => void;
 }
 

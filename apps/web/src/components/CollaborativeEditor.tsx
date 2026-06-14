@@ -4,24 +4,14 @@ import { MonacoBinding } from "y-monaco";
 import type * as Y from "yjs";
 import type { Awareness } from "y-protocols/awareness";
 import type { editor } from "monaco-editor";
-import type { SupportedLanguage } from "@tessera/shared-types";
-import { registerEditorIntelliSense } from "../intellisense/index.js";
 
 interface CollaborativeEditorProps {
   readonly ytext: Y.Text;
   readonly awareness: Awareness;
-  readonly language?: SupportedLanguage;
+  readonly language?: string;
   readonly showMinimap?: boolean;
   readonly fontSize?: number;
 }
-
-const LANGUAGE_MAP: Record<SupportedLanguage, string> = {
-  typescript: "typescript",
-  python: "python",
-  cpp: "cpp",
-  java: "java",
-  rust: "rust"
-};
 
 export function CollaborativeEditor({
   ytext,
@@ -33,24 +23,43 @@ export function CollaborativeEditor({
   const editorRef = useRef<editor.IStandaloneCodeEditor | null>(null);
   const bindingRef = useRef<MonacoBinding | null>(null);
 
-  const handleEditorMount: OnMount = useCallback(
-    (mountedEditor, monaco) => {
-      editorRef.current = mountedEditor;
-      registerEditorIntelliSense(monaco);
+  /** Recreate the Monaco–Yjs binding whenever the active ytext changes. */
+  const rebind = useCallback(
+    (editorInstance: editor.IStandaloneCodeEditor) => {
+      // Destroy any previous binding first.
+      bindingRef.current?.destroy();
+      bindingRef.current = null;
 
-      const model = mountedEditor.getModel();
+
+      const model = editorInstance.getModel();
       if (!model) return;
 
       bindingRef.current = new MonacoBinding(
         ytext,
         model,
-        new Set([mountedEditor]),
+        new Set([editorInstance]),
         awareness,
       );
     },
     [ytext, awareness],
   );
 
+  const handleEditorMount: OnMount = useCallback(
+    (mountedEditor) => {
+      editorRef.current = mountedEditor;
+      rebind(mountedEditor);
+    },
+    [rebind],
+  );
+
+  // Re-bind whenever the active file (ytext) changes after initial mount.
+  useEffect(() => {
+    if (editorRef.current) {
+      rebind(editorRef.current);
+    }
+  }, [rebind]);
+
+  // Cleanup on unmount.
   useEffect(() => {
     return () => {
       bindingRef.current?.destroy();
@@ -59,23 +68,17 @@ export function CollaborativeEditor({
   }, []);
 
   useEffect(() => {
-    if (editorRef.current) {
-      editorRef.current.updateOptions({
-        minimap: { enabled: showMinimap },
-      });
-    }
+    editorRef.current?.updateOptions({ minimap: { enabled: showMinimap } });
   }, [showMinimap]);
 
   useEffect(() => {
-    if (editorRef.current) {
-      editorRef.current.updateOptions({ fontSize });
-    }
+    editorRef.current?.updateOptions({ fontSize });
   }, [fontSize]);
 
   return (
     <Editor
       height="100%"
-      language={LANGUAGE_MAP[language]}
+      language={language}
       theme="vs-dark"
       onMount={handleEditorMount}
       options={{
