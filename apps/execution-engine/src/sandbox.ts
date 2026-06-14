@@ -144,7 +144,7 @@ export async function executeInSandbox(
 
       return {
         taskId: task.id,
-        epochId: task.epochId, // ← fix 1
+        epochId: task.epochId,
         status: "timeout",
         stdout: "",
         stderr: `Execution timed out after ${String(task.timeoutMs)}ms`,
@@ -169,7 +169,7 @@ export async function executeInSandbox(
 
     return {
       taskId: task.id,
-      epochId: task.epochId, // ← fix 2
+      epochId: task.epochId,
       status: exitCode === 0 ? "completed" : "failed",
       stdout: logOutput,
       stderr: "",
@@ -182,7 +182,7 @@ export async function executeInSandbox(
 
     return {
       taskId: task.id,
-      epochId: task.epochId, // ← fix 3
+      epochId: task.epochId,
       status: "failed",
       stdout: "",
       stderr: message,
