@@ -10,6 +10,18 @@ Standard cloud IDEs are built for humans. Tessera.io is built for the future: a 
 
 ---
 
+## Table of Contents
+
+- [🚀 Current State: The MVP](#-current-state-the-mvp)
+- [🌐 Supported Languages](#-supported-languages)
+- [🏗️ Architecture & Monorepo Structure](#%EF%B8%8F-architecture--monorepo-structure)
+- [🛠️ Local Development Setup](#%EF%B8%8F-local-development-setup)
+- [🗺️ Roadmap & Future Plans](#%EF%B8%8F-roadmap--future-plans)
+- [🤝 Contributing](#-contributing)
+- [📄 License](#-license)
+
+---
+
 ## 🚀 Current State: The MVP
 
 The current repository is the foundational MVP. We have established the core plumbing to allow real-time collaborative typing and remote code execution. 
