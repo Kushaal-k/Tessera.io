@@ -21,6 +21,20 @@ The current repository is the foundational MVP. We have established the core plu
 
 ---
 
+## 🌐 Supported Languages
+
+Tessera.io currently supports the following languages in the collaborative editor:
+
+| Language   | Monaco Mapping | Execution Sandbox | IntelliSense |
+|------------|---------------|-------------------|--------------|
+| TypeScript | `typescript`  | ✅ Supported      | ✅ Built-in  |
+| Python     | `python`      | ✅ Supported      | 🔧 In Progress |
+| C++        | `cpp`         | ✅ Supported      | 🔧 In Progress |
+
+> Want to add a new language? See the [Adding a New Language](CONTRIBUTING.md#adding-a-new-language) guide.
+
+---
+
 ## 🏗️ Architecture & Monorepo Structure
 
 Tessera.io uses a strict **Turborepo** monorepo via npm workspaces. This modular design allows open-source contributors to work on the exact layer they specialize in without needing to understand the entire stack.
@@ -44,10 +58,12 @@ Tessera.io/
 
 ### Prerequisites
 
+Before starting, install the tools for your operating system:
+
 * **Node.js** ≥ 20.0.0 and **npm** ≥ 10.0.0
-* **Docker** (for the execution engine)
-* **Redis** (for BullMQ task queues)
-* **MongoDB** (for AI service RAG storage)
+* **Docker** or **Docker Desktop** (for the execution engine)
+* **Redis** (for BullMQ task queues; a Docker container is fine)
+* **MongoDB** (for AI service RAG storage; a Docker container is fine)
 * **Python** ≥ 3.11 (for the AI microservice)
 
 *Optional:*
@@ -55,26 +71,67 @@ Tessera.io/
 
 If the execution engine cannot reach Docker, hits WSL mount errors, or leaves behind interrupted sandbox containers, see the [Docker Sandbox Troubleshooting](docs/docker-sandbox-troubleshooting.md) guide.
 
-### Quick Start
+### Clone and install
 
 1. **Clone the repository:**
 ```bash
-git clone git@github.com:Kushaal-k/Tessera.io.git
+git clone https://github.com/Kushaal-k/Tessera.io.git
 cd Tessera.io
 ```
+
+The README defaults to HTTPS because it works without SSH key setup. If you prefer SSH and have keys configured, use `git clone git@github.com:Kushaal-k/Tessera.io.git` instead. If you are contributing from a fork, replace the clone URL with your fork's SSH or HTTPS URL.
 
 2. **Install all workspace dependencies:**
 ```bash
 npm install
 ```
 
-3. **Start infrastructure services (Redis & MongoDB):**
+3. **Create your local environment file:**
+```bash
+cp .env.example .env
+```
+
+On Windows PowerShell:
+```powershell
+Copy-Item .env.example .env
+```
+
+### Linux setup
+
+1. **Verify Node.js, npm, Docker, and Python:**
+```bash
+node --version
+npm --version
+docker version
+python3 --version
+```
+
+2. **Start Docker if it is not already running:**
+
+On systemd-based Linux distributions:
+```bash
+sudo systemctl start docker
+```
+
+On non-systemd distributions or WSL setups that use the Docker service script:
+```bash
+sudo service docker start
+```
+
+If neither command applies, follow your distribution's Docker startup instructions.
+
+3. **Start infrastructure services (Redis and MongoDB):**
 ```bash
 # Start Redis (if not already running)
-docker run -d --name tessera-redis -p 6379:6379 redis:7-alpine
+docker run -d --name tessera-redis -p 127.0.0.1:6379:6379 redis:7-alpine
 
 # Start MongoDB (if not already running)
-docker run -d --name tessera-mongo -p 27017:27017 mongo:7
+docker run -d --name tessera-mongo -p 127.0.0.1:27017:27017 mongo:7
+```
+
+If a container with the same name already exists, start it instead:
+```bash
+docker start tessera-redis tessera-mongo
 ```
 
 4. **Set up the Python AI service:**
@@ -91,7 +148,76 @@ cd ../..
 npm run dev
 ```
 
-This single command will concurrently spin up the React frontend, the Socket.io sync server, the FastAPI service, and the BullMQ execution worker via Turborepo.
+### Windows setup
+
+For the smoothest Windows experience, use Windows 11, PowerShell, and Docker Desktop with the WSL 2 backend enabled.
+
+1. **Verify Node.js, npm, Docker Desktop, and Python:**
+```powershell
+node --version
+npm --version
+docker version
+python --version
+```
+
+2. **Start infrastructure services (Redis and MongoDB):**
+```powershell
+# Start Redis (if not already running)
+docker run -d --name tessera-redis -p 127.0.0.1:6379:6379 redis:7-alpine
+
+# Start MongoDB (if not already running)
+docker run -d --name tessera-mongo -p 127.0.0.1:27017:27017 mongo:7
+```
+
+If a container with the same name already exists, start it instead:
+```powershell
+docker start tessera-redis tessera-mongo
+```
+
+3. **Set up the Python AI service:**
+```powershell
+cd apps/ai-service
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+pip install -r requirements.txt
+cd ..\..
+```
+
+If PowerShell blocks virtual environment activation, allow scripts for the current PowerShell session only:
+```powershell
+Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
+```
+
+Then run the activation command again. This setting expires when the PowerShell window closes.
+
+4. **Start all services in development mode:**
+```powershell
+npm run dev
+```
+
+### Verify your setup
+
+Run these checks from the repository root before opening a pull request. The same commands work in Bash, PowerShell, or CMD:
+
+```text
+npm run typecheck
+npm run build
+```
+
+Then start the development stack as a manual smoke test:
+
+```bash
+npm run dev
+```
+
+This command stays running while the services are active. When it is running, confirm the local services use the expected defaults:
+
+* Redis is reachable on `localhost:6379`
+* MongoDB is reachable on `localhost:27017`
+* The sync server uses `PORT=4000`
+* The frontend origin is `http://localhost:3000`
+
+`npm run dev` concurrently starts the React frontend, the Socket.io sync server, the FastAPI service, and the BullMQ execution worker via Turborepo.
 
 
 ## 🗺️ Roadmap & Future Plans
