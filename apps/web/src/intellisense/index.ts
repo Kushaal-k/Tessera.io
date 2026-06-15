@@ -1,13 +1,26 @@
 import type * as Monaco from "monaco-editor";
 import { registerCppIntelliSense } from "./cpp.js";
+import { registerPythonIntelliSense } from "./python.js";
+import { registerJavaIntelliSense } from "./java.js";
+import { registerRustIntelliSense } from "./rust.js";
 
 const registeredLanguages = new Set<string>();
 
 export function registerEditorIntelliSense(monaco: typeof Monaco) {
-  if (registeredLanguages.has("cpp")) {
-    return;
+  if (!registeredLanguages.has("cpp")) {
+    registerCppIntelliSense(monaco);
+    registeredLanguages.add("cpp");
   }
-
-  registerCppIntelliSense(monaco);
-  registeredLanguages.add("cpp");
+  if (!registeredLanguages.has("python")) {
+    registerPythonIntelliSense(monaco);
+    registeredLanguages.add("python");
+  }
+  if (!registeredLanguages.has("java")) {
+    registerJavaIntelliSense(monaco);
+    registeredLanguages.add("java");
+  }
+  if (!registeredLanguages.has("rust")) {
+    registerRustIntelliSense(monaco);
+    registeredLanguages.add("rust");
+  }
 }
