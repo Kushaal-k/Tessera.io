@@ -6,7 +6,7 @@ import {
   createDefaultParticipant,
 } from "./hooks/useCollaboration.js";
 import { isMacOS, getExecutionShortcutText } from "./utils/platformDetection.js";
-import type { SyncConnectionConfig, SupportedLanguage, ExecutionResult } from "@tessera/shared-types";
+import type { SyncConnectionConfig, SupportedLanguage, ExecutionResult, Participant } from "@tessera/shared-types";
 import { downloadTextFile } from "./utils/downloadUtils.js";
 
 const SYNC_SERVER_URL = "http://localhost:4000";
@@ -25,6 +25,7 @@ export function App() {
   const participant = useMemo(() => createDefaultParticipant(), []);
   const [language, setLanguage] = useState<SupportedLanguage>("typescript");
   const [isRunning, setIsRunning] = useState(false);
+  const [runningParticipant, setRunningParticipant] = useState<Participant | null>(null);
   const [isAiPanelOpen, setIsAiPanelOpen] = useState(false);
   const [output, setOutput] = useState<ExecutionResult | null>(null);
   const [showMinimap, setShowMinimap] = useState(true);
@@ -44,14 +45,23 @@ export function App() {
   useEffect(() => {
     if (!socket) return;
 
+    const handleExecutionStarted = (payload: { participant: Participant }) => {
+      setIsRunning(true);
+      setRunningParticipant(payload.participant);
+      setOutput(null);
+    };
+
     const handleExecutionResult = (result: ExecutionResult) => {
       setOutput(result);
       setIsRunning(false);
+      setRunningParticipant(null);
     };
 
+    socket.on("execution-started", handleExecutionStarted);
     socket.on("execution-result", handleExecutionResult);
 
     return () => {
+      socket.off("execution-started", handleExecutionStarted);
       socket.off("execution-result", handleExecutionResult);
     };
   }, [socket]);
@@ -74,6 +84,7 @@ export function App() {
   const handleRunCode = () => {
     if (!socket || !ytext || isRunning) return;
     setIsRunning(true);
+    setRunningParticipant(participant);
     setOutput(null);
     socket.emit("execute-code", {
       code: ytext.toString(),
@@ -267,6 +278,11 @@ export function App() {
           </p>
           {output && (
             <div className="flex gap-4 text-xs font-medium">
+              {output.triggeredBy && (
+                <span className="text-slate-400">
+                  Ran by: <span style={{ color: output.triggeredBy.cursorColor }} className="font-semibold">{output.triggeredBy.displayName}</span>
+                </span>
+              )}
               <span className={output.status === "completed" ? "text-emerald-400" : "text-rose-400"}>
                 Status: {output.status}
               </span>
@@ -283,7 +299,9 @@ export function App() {
         </div>
         <div className="flex-1 overflow-y-auto font-mono text-xs p-2 rounded bg-[var(--color-bg)] border border-[var(--color-border)]">
           {isRunning ? (
-            <span className="text-tessera-400 animate-pulse">Running execution sandbox...</span>
+            <span className="text-tessera-400 animate-pulse">
+              Running execution sandbox{runningParticipant ? ` (started by ${runningParticipant.displayName})` : ""}...
+            </span>
           ) : output ? (
             <div className="space-y-1 whitespace-pre-wrap">
               {output.stdout && <div className="text-emerald-300">{output.stdout}</div>}

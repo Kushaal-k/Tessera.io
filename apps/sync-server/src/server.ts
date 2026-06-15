@@ -12,6 +12,7 @@ import type {
   ExecutionTask,
   ExecutionResult,
 } from "@tessera/shared-types";
+import { validateExecuteCodePayload } from "./executeCodeValidation.js";
 
 interface RoomState {
   readonly doc: Y.Doc;
@@ -141,31 +142,63 @@ io.on("connection", (socket) => {
     if (!currentRoomId) return;
 
     const taskId = crypto.randomUUID();
+    const validation = validateExecuteCodePayload({
+      code: (payload as { code?: unknown }).code,
+      language: (payload as { language?: unknown }).language,
+    });
+
+
+
+    if (!validation.ok) {
+      io.to(currentRoomId).emit("execution-result", {
+        taskId,
+        status: "failed",
+        stdout: "",
+        stderr: validation.reason,
+        exitCode: 1,
+        durationMs: 0,
+        triggeredBy: currentParticipant ?? undefined,
+      } satisfies ExecutionResult);
+      return;
+    }
+
     try {
       const task: ExecutionTask = {
         id: taskId,
-        code: payload.code,
-        language: payload.language,
+        code: validation.code,
+        language: validation.language,
         timeoutMs: 5000,
         roomId: currentRoomId,
         createdAt: new Date().toISOString(),
       };
 
+
+      if (currentParticipant) {
+        io.to(currentRoomId).emit("execution-started", {
+          participant: currentParticipant,
+        });
+      }
+
       console.log(`[sync-server] enqueuing code execution ${taskId} [lang=${payload.language}]`);
       const job = await executionQueue.add("execute", task, { jobId: taskId });
 
       const result = await job.waitUntilFinished(queueEvents);
+
       console.log(`[sync-server] execution ${taskId} finished`);
-      socket.emit("execution-result", result as ExecutionResult);
+      io.to(currentRoomId).emit("execution-result", {
+        ...(result as ExecutionResult),
+        triggeredBy: currentParticipant ?? undefined,
+      });
     } catch (err: unknown) {
       console.error(`[sync-server] execution ${taskId} failed:`, err);
-      socket.emit("execution-result", {
+      io.to(currentRoomId).emit("execution-result", {
         taskId,
         status: "failed",
         stdout: "",
         stderr: err instanceof Error ? err.message : String(err),
         exitCode: 1,
         durationMs: 0,
+        triggeredBy: currentParticipant ?? undefined,
       });
     }
   });
