@@ -26,12 +26,6 @@
     "node": ">=20.0.0",
     "npm": ">=10.0.0"
   },
-  "packageManager": "npm@10.9.2",
-  "dependencies": {
-    "@monaco-editor/react": "^4.7.0",
-    "monaco-editor": "^0.55.1",
-    "y-monaco": "^0.1.6",
-    "y-protocols": "^1.0.7",
-    "yjs": "^13.6.31"
-  }
+  "packageManager": "npm@10.9.2"
+  
 }

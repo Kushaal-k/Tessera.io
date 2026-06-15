@@ -19,8 +19,8 @@ const LANGUAGE_MAP: Record<SupportedLanguage, string> = {
   typescript: "typescript",
   python: "python",
   cpp: "cpp",
-  rust: "rust",
   java: "java",
+  rust: "rust",
   go: "go",
 };
 
@@ -39,19 +39,18 @@ export function CollaborativeEditor({
       editorRef.current = mountedEditor;
       registerEditorIntelliSense(monaco);
 
-
       const model = mountedEditor.getModel();
       if (!model) return;
 
-    bindingRef.current = new MonacoBinding(
-      ytext,
-      model,
-      new Set([mountedEditor]),
-      awareness,
-    );
-  },
-  [ytext, awareness],
-);
+      bindingRef.current = new MonacoBinding(
+        ytext,
+        model,
+        new Set([mountedEditor]),
+        awareness,
+      );
+    },
+    [ytext, awareness],
+  );
 
   useEffect(() => {
     return () => {
