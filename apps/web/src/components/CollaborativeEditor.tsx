@@ -5,13 +5,14 @@ import type * as Y from "yjs";
 import type { Awareness } from "y-protocols/awareness";
 import type { editor } from "monaco-editor";
 import type { SupportedLanguage } from "@tessera/shared-types";
-import { registerAllIntellisense } from "../intellisense";
-
+import { registerEditorIntelliSense } from "../intellisense/index.js";
 
 interface CollaborativeEditorProps {
   readonly ytext: Y.Text;
   readonly awareness: Awareness;
   readonly language?: SupportedLanguage;
+  readonly showMinimap?: boolean;
+  readonly fontSize?: number;
 }
 
 const LANGUAGE_MAP: Record<SupportedLanguage, string> = {
@@ -19,24 +20,29 @@ const LANGUAGE_MAP: Record<SupportedLanguage, string> = {
   python: "python",
   cpp: "cpp",
   rust: "rust",
+  java: "java",
+  rust: "rust",
+  go: "go",
 };
 
 export function CollaborativeEditor({
   ytext,
   awareness,
   language = "typescript",
+  showMinimap = true,
+  fontSize = 14,
 }: CollaborativeEditorProps) {
   const editorRef = useRef<editor.IStandaloneCodeEditor | null>(null);
   const bindingRef = useRef<MonacoBinding | null>(null);
 
   const handleEditorMount: OnMount = useCallback(
-  (mountedEditor, monaco) => {
-    editorRef.current = mountedEditor;
+    (mountedEditor, monaco) => {
+      editorRef.current = mountedEditor;
+      registerEditorIntelliSense(monaco);
 
-    registerAllIntellisense(monaco);  // 👈 add this
 
-    const model = mountedEditor.getModel();
-    if (!model) return;
+      const model = mountedEditor.getModel();
+      if (!model) return;
 
     bindingRef.current = new MonacoBinding(
       ytext,
@@ -55,6 +61,20 @@ export function CollaborativeEditor({
     };
   }, []);
 
+  useEffect(() => {
+    if (editorRef.current) {
+      editorRef.current.updateOptions({
+        minimap: { enabled: showMinimap },
+      });
+    }
+  }, [showMinimap]);
+
+  useEffect(() => {
+    if (editorRef.current) {
+      editorRef.current.updateOptions({ fontSize });
+    }
+  }, [fontSize]);
+
   return (
     <Editor
       height="100%"
@@ -62,8 +82,8 @@ export function CollaborativeEditor({
       theme="vs-dark"
       onMount={handleEditorMount}
       options={{
-        minimap: { enabled: false },
-        fontSize: 14,
+        minimap: { enabled: showMinimap },
+        fontSize,
         fontFamily: "'JetBrains Mono', 'Fira Code', monospace",
         lineNumbers: "on",
         renderWhitespace: "selection",
