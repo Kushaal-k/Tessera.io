@@ -16,7 +16,8 @@
     "dev": "tsc --project tsconfig.build.json --watch",
     "typecheck": "tsc --noEmit",
     "clean": "rm -rf dist",
-    "lint": "echo 'lint not configured yet'"
+    "lint": "echo 'lint not configured yet'",
+    "test": "vitest run"
   },
   "dependencies": {
     "@tessera/shared-types": "*"
@@ -26,8 +27,12 @@
     "react-dom": "^19.0.0"
   },
   "devDependencies": {
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.2",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
-    "typescript": "^6.0.3"
+    "jsdom": "^29.1.1",
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.8"
   }
 }

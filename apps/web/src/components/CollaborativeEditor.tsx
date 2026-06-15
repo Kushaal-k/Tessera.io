@@ -38,7 +38,7 @@ export function CollaborativeEditor({
   const viewZoneRootsRef = useRef<Root[]>([]);
 
   const handleEditorMount: OnMount = useCallback(
-    (mountedEditor) => {
+    (mountedEditor: editor.IStandaloneCodeEditor) => {
       editorRef.current = mountedEditor;
 
       const model = mountedEditor.getModel();
@@ -59,7 +59,7 @@ export function CollaborativeEditor({
     const editorInstance = editorRef.current;
     if (!editorInstance) return;
 
-    editorInstance.changeViewZones((accessor) => {
+    editorInstance.changeViewZones((accessor: editor.IViewZoneChangeAccessor) => {
       const domNode = document.createElement("div");
       domNode.style.zIndex = "10";
       // Adding padding so it doesn't touch the code directly
@@ -72,7 +72,7 @@ export function CollaborativeEditor({
       let zoneId = "";
       
       const closeAnnotation = () => {
-        editorInstance.changeViewZones((acc) => {
+        editorInstance.changeViewZones((acc: editor.IViewZoneChangeAccessor) => {
           acc.removeZone(zoneId);
         });
         root.unmount();
@@ -91,8 +91,11 @@ export function CollaborativeEditor({
           message={message}
           suggestions={suggestions}
           onClose={closeAnnotation}
-          onSuggestionClick={(s) => console.log("User selected suggestion:", s)}
-          onSubmit={(text) => console.log("User submitted question:", text)}
+          onSuggestionClick={(s: string) => console.log("User selected suggestion:", s)}
+          // TODO(Phase 2): Integrate with @tessera/ai-service
+          // This will be replaced with a call to the actual AI service
+          // e.g., const response = await aiService.askMentor(text);
+          onSubmit={(text: string) => console.log("User submitted question:", text)}
         />
       );
     });
@@ -110,7 +113,7 @@ export function CollaborativeEditor({
       keybindings: [
         KeyMod.CtrlCmd | KeyCode.KeyM
       ],
-      run: (ed) => {
+      run: (ed: editor.ICodeEditor) => {
         const position = ed.getPosition();
         const selection = ed.getSelection();
         const selectedText = selection ? ed.getModel()?.getValueInRange(selection) : "";
