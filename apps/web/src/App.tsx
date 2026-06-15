@@ -99,11 +99,11 @@ export function App() {
           <button
             onClick={handleRunCode}
             disabled={!connected || isRunning}
-            className={`flex items-center gap-1.5 px-3 py-1 text-sm font-semibold rounded transition shadow-sm ${isRunning
-                ? "bg-slate-700 text-[var(--color-text-muted)] cursor-not-allowed"
-                : !connected
-                  ? "bg-slate-800 text-[var(--color-text-muted)] cursor-not-allowed"
-                  : "bg-tessera-600 hover:bg-tessera-500 text-[var(--color-text)] cursor-pointer active:scale-95"
+            className={`flex items-center gap-1.5 px-3 py-1 text-sm font-semibold rounded transition shadow-sm bg-[#00ed64] text-black ${isRunning
+              ? "cursor-wait opacity-70"
+              : !connected
+                ? "cursor-not-allowed opacity-50"
+                : "hover:bg-[#00d45a] cursor-pointer active:scale-95"
               }`}
           >
             {isRunning ? (
