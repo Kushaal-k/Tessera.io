@@ -1,13 +1,14 @@
 import logging
-from contextlib import asynccontextmanager
 from collections.abc import AsyncGenerator
+from contextlib import asynccontextmanager
 from time import perf_counter
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+
 from .config import settings
-from .db import connect_db, close_db, check_connection
+from .db import check_connection, close_db, connect_db, ensure_collection_indexes
 from .rag import router as rag_router
 from .mcp_server import mcp
 
@@ -17,6 +18,7 @@ logger = logging.getLogger("tessera.ai.timing")
 @asynccontextmanager
 async def lifespan(_app: FastAPI) -> AsyncGenerator[None]:
     await connect_db()
+    await ensure_collection_indexes()
     yield
     await close_db()
 
