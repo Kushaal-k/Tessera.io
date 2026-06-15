@@ -8,6 +8,7 @@ import { KeyMod, KeyCode } from "monaco-editor";
 import { createRoot, type Root } from "react-dom/client";
 import { SocraticAnnotation } from "@tessera/ui-components";
 import type { SupportedLanguage } from "@tessera/shared-types";
+import { registerEditorIntelliSense } from "../intellisense/index.js";
 
 interface CollaborativeEditorProps {
   readonly ytext: Y.Text;
@@ -22,7 +23,8 @@ const LANGUAGE_MAP: Record<SupportedLanguage, string> = {
   python: "python",
   cpp: "cpp",
   java: "java",
-  rust: "rust"
+  rust: "rust",
+  go: "go",
 };
 
 export function CollaborativeEditor({
@@ -38,8 +40,9 @@ export function CollaborativeEditor({
   const viewZoneRootsRef = useRef<Root[]>([]);
 
   const handleEditorMount: OnMount = useCallback(
-    (mountedEditor: editor.IStandaloneCodeEditor) => {
+    (mountedEditor: editor.IStandaloneCodeEditor, monaco: any) => {
       editorRef.current = mountedEditor;
+      registerEditorIntelliSense(monaco);
 
       const model = mountedEditor.getModel();
       if (!model) return;
