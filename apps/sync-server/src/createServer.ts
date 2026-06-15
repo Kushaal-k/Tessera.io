@@ -67,13 +67,20 @@ export function createSyncServer() {
 
     const QUEUE_NAME = "code-execution";
 
-    // Lazily initialize BullMQ resources only when needed.
-    // This allows integration tests to exercise collaboration
-    // flows without requiring a running Redis instance.
+    // BullMQ resources are created lazily so collaboration-only
+    // integration tests can run without requiring Redis.
+    //
+    // These instances are shared by the entire sync-server and
+    // reused across all execute-code requests instead of creating
+    // new Redis connections per request.
 
+    // Queue and QueueEvents are initialized synchronously before any await
+    // points are reached in this handler. Since Node.js executes JavaScript
+    // on a single event loop, concurrent execute-code requests cannot
+    // interleave within this initialization block and create duplicate
+    // instances.
     let executionQueue: Queue<ExecutionTask> | null = null;
     let queueEvents: QueueEvents | null = null;
-
     io.on("connection", (socket) => {
         let currentRoomId: string | null = null;
         let currentParticipant: Participant | null = null;

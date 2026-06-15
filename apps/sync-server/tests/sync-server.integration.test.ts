@@ -73,51 +73,71 @@ describe("Sync Server Integration Tests", () => {
 
     it("should track multiple participants in the same room", async () => {
         const client1 = Client(`http://localhost:${port}`);
-        const client2 = Client(`http://localhost:${port}`);
+    const client2 = Client(`http://localhost:${port}`);
 
-        await new Promise<void>((resolve, reject) => {
-            let joins = 0;
+    await new Promise<void>((resolve, reject) => {
+        let client1Payload: any = null;
+        let client2Payload: any = null;
 
-            const onJoined = () => {
-                joins++;
+        const maybeFinish = () => {
+            if (!client1Payload || !client2Payload) {
+                return;
+            }
 
-                if (joins === 2) {
-                    client1.disconnect();
-                    client2.disconnect();
-                    resolve();
-                }
-            };
+            try {
+                // Verify both clients observe the same room membership.
+                expect(client1Payload.participants).toHaveLength(2);
+                expect(client2Payload.participants).toHaveLength(2);
 
-            client1.on("room-joined", onJoined);
-            client2.on("room-joined", onJoined);
+                const participantIds = client2Payload.participants.map(
+                    (participant: { id: string }) => participant.id,
+                );
 
-            client1.on("connect", () => {
-                client1.emit("join-room", {
-                    roomId: "shared-room",
-                    participant: {
-                        id: "user-1",
-                        displayName: "Alice",
-                        isAI: false,
-                        cursorColor: "#ff0000",
-                    },
-                });
+                expect(participantIds).toContain("user-1");
+                expect(participantIds).toContain("user-2");
+
+                client1.disconnect();
+                client2.disconnect();
+                resolve();
+            } catch (err) {
+                reject(err);
+            }
+        };
+
+        client1.on("room-joined", (payload) => {
+            client1Payload = payload;
+            maybeFinish();
+        });
+
+        client2.on("room-joined", (payload) => {
+            client2Payload = payload;
+            maybeFinish();
+        });
+
+        client1.on("connect", () => {
+            client1.emit("join-room", {
+                roomId: "shared-room",
+                participant: {
+                    id: "user-1",
+                    displayName: "Alice",
+                    isAI: false,
+                    cursorColor: "#ff0000",
+                },
             });
+        });
 
-            client2.on("connect", () => {
-                client2.emit("join-room", {
-                    roomId: "shared-room",
-                    participant: {
-                        id: "user-2",
-                        displayName: "Bob",
-                        isAI: false,
-                        cursorColor: "#00ff00",
-                    },
-                });
+        client2.on("connect", () => {
+            client2.emit("join-room", {
+                roomId: "shared-room",
+                participant: {
+                    id: "user-2",
+                    displayName: "Bob",
+                    isAI: false,
+                    cursorColor: "#00ff00",
+                },
             });
         });
     });
-   
-
-   
+    });
 });
 
