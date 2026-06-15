@@ -1,19 +1,5 @@
 import type * as Monaco from "monaco-editor";
-
-function createRange(
-  monaco: typeof Monaco,
-  model: Monaco.editor.ITextModel,
-  position: Monaco.Position,
-) {
-  const word = model.getWordUntilPosition(position);
-
-  return new monaco.Range(
-    position.lineNumber,
-    word.startColumn,
-    position.lineNumber,
-    word.endColumn,
-  );
-}
+import { createRange } from "./utils.js";
 
 export function registerRustIntelliSense(monaco: typeof Monaco): Monaco.IDisposable {
   return monaco.languages.registerCompletionItemProvider("rust", {
