@@ -12,7 +12,7 @@ import type {
   ExecutionTask,
   ExecutionResult,
 } from "@tessera/shared-types";
-import { validateExecuteCodePayload } from "./executeCodeValidation";
+import { validateExecuteCodePayload } from "./executeCodeValidation.js";
 
 interface RoomState {
   readonly doc: Y.Doc;
