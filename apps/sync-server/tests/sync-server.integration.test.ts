@@ -78,6 +78,7 @@ describe("Sync Server Integration Tests", () => {
         await new Promise<void>((resolve, reject) => {
             let client1Payload: any = null;
             let client2Payload: any = null;
+            let client2Ready = false;
 
             const maybeFinish = () => {
                 if (!client1Payload || !client2Payload) {
@@ -85,10 +86,8 @@ describe("Sync Server Integration Tests", () => {
                 }
 
                 try {
-                    // First client joined an empty room.
                     expect(client1Payload.participants).toHaveLength(1);
 
-                    // Second client should see both participants.
                     expect(client2Payload.participants).toHaveLength(2);
 
                     const participantIds = client2Payload.participants.map(
@@ -100,15 +99,32 @@ describe("Sync Server Integration Tests", () => {
 
                     client1.disconnect();
                     client2.disconnect();
+
                     resolve();
                 } catch (err) {
                     reject(err);
                 }
             };
 
+            client2.on("connect", () => {
+                client2Ready = true;
+            });
+
             client1.on("room-joined", (payload) => {
                 client1Payload = payload;
-                maybeFinish();
+
+                // Ensure client2 is connected before asking it to join.
+                if (client2Ready && !client2Payload) {
+                    client2.emit("join-room", {
+                        roomId: "shared-room",
+                        participant: {
+                            id: "user-2",
+                            displayName: "Bob",
+                            isAI: false,
+                            cursorColor: "#00ff00",
+                        },
+                    });
+                }
             });
 
             client2.on("room-joined", (payload) => {
@@ -128,18 +144,8 @@ describe("Sync Server Integration Tests", () => {
                 });
             });
 
-            client2.on("connect", () => {
-                client2.emit("join-room", {
-                    roomId: "shared-room",
-                    participant: {
-                        id: "user-2",
-                        displayName: "Bob",
-                        isAI: false,
-                        cursorColor: "#00ff00",
-                    },
-                });
-            });
+            client1.on("connect_error", reject);
+            client2.on("connect_error", reject);
         });
     });
 });
-
