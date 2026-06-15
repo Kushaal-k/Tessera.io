@@ -154,6 +154,8 @@ async function uploadSourceFile(
 
   const tarBuffer = await tarPromise;
   await container.putArchive(tarBuffer, { path: "/tmp" });
+}
+
 /**
  * Parses and formats raw g++ compiler error logs into clean, boxed visual frames.
  */
@@ -421,7 +423,7 @@ export async function executeInSandbox(
     console.log(`[sandbox] container completed: ${container.id} | exitCode: ${exitCode} | duration: ${(performance.now() - startTime).toFixed(2)}ms`);
 
     const formattedStderr =
-      task.language === "cpp" && exitCode !== 0
+      (task.language as string) === "cpp" && exitCode !== 0
         ? formatCppCompilerErrors(stderr)
         : stderr;
 
