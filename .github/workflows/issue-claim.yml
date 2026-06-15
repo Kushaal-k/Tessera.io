@@ -26,10 +26,17 @@ jobs:
         run: |
           # Prevent self-claiming by non-maintainers
           if [ "$COMMENTER" = "$AUTHOR" ]; then
-            if [ "$AUTHOR_ASSOCIATION" != "OWNER" ] && [ "$AUTHOR_ASSOCIATION" != "MEMBER" ] && [ "$AUTHOR_ASSOCIATION" != "COLLABORATOR" ]; then
+            if [ "$AUTHOR_ASSOCIATION" != "OWNER" ]; then
               gh issue comment "$ISSUE_NUMBER" --repo "$GITHUB_REPOSITORY" --body "Hi @$COMMENTER, contributors cannot use \`/claim\` on issues they opened themselves. A maintainer will review your issue and assign it if approved!"
               exit 0
             fi
+          fi
+
+          # Check if issue requires approval
+          LABELS=$(gh issue view "$ISSUE_NUMBER" --repo "$GITHUB_REPOSITORY" --json labels -q '.labels[].name')
+          if echo "$LABELS" | grep -q "^need approval$"; then
+            gh issue comment "$ISSUE_NUMBER" --repo "$GITHUB_REPOSITORY" --body "Hi @$COMMENTER, this issue requires maintainer approval before it can be claimed."
+            exit 0
           fi
 
           # Fetch list of existing assignees
@@ -39,6 +46,13 @@ jobs:
             echo "Issue is already assigned to: $ASSIGNEES"
             gh issue comment "$ISSUE_NUMBER" --repo "$GITHUB_REPOSITORY" --body "Hi @$COMMENTER, this issue is already assigned to @$ASSIGNEES. Feel free to browse our other [good first issues](https://github.com/${{ github.repository }}/issues?q=is%3Aopen+is%3Aissue+label%3A%22good+first+issue%22)! 😊"
           else
+            # Check maximum claims per user
+            OPEN_ISSUES_COUNT=$(gh issue list --assignee "$COMMENTER" --state open --json number -q 'length' --repo "$GITHUB_REPOSITORY")
+            if [ "$OPEN_ISSUES_COUNT" -ge 3 ]; then
+              gh issue comment "$ISSUE_NUMBER" --repo "$GITHUB_REPOSITORY" --body "Hi @$COMMENTER, you already have 3 open issues assigned to you. Please complete those before claiming new ones."
+              exit 0
+            fi
+
             # Assign the issue to the commenter
             gh issue edit "$ISSUE_NUMBER" --repo "$GITHUB_REPOSITORY" --add-assignee "$COMMENTER"
             # Post success confirmation comment

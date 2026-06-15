@@ -5,6 +5,7 @@ import {
   useCollaboration,
   createDefaultParticipant,
 } from "./hooks/useCollaboration.js";
+import { isMacOS, getExecutionShortcutText } from "./utils/platformDetection.js";
 import type { SyncConnectionConfig, SupportedLanguage, ExecutionResult } from "@tessera/shared-types";
 import { downloadTextFile } from "./utils/downloadUtils.js";
 
@@ -16,7 +17,8 @@ const FILE_NAMES: Record<SupportedLanguage, string> = {
   python: "main.py",
   cpp: "main.cpp",
   java: "Main.java",
-  rust: "main.rs"
+  rust: "main.rs",
+  go: "main.go",
 };
 
 export function App() {
@@ -53,6 +55,21 @@ export function App() {
       socket.off("execution-result", handleExecutionResult);
     };
   }, [socket]);
+
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      const isExecutionShortcut = isMacOS() ? event.metaKey : event.ctrlKey;
+      if (isExecutionShortcut && event.key === "Enter") {
+        event.preventDefault();
+        if (!isRunning && connected) {
+          handleRunCode();
+        }
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [socket, ytext, isRunning, connected]);
 
   const handleRunCode = () => {
     if (!socket || !ytext || isRunning) return;
@@ -92,6 +109,7 @@ export function App() {
               <option value="cpp">C++</option>
               <option value="java">Java</option>
               <option value="rust">Rust</option>
+              <option value="go">Go</option>
             </select>
           </div>
 
@@ -99,12 +117,14 @@ export function App() {
           <button
             onClick={handleRunCode}
             disabled={!connected || isRunning}
-            className={`flex items-center gap-1.5 px-3 py-1 text-sm font-semibold rounded transition shadow-sm bg-[#00ed64] text-black ${isRunning
-              ? "cursor-wait opacity-70"
-              : !connected
+            title={`Run code (${getExecutionShortcutText()})`}
+            className={`flex items-center gap-1.5 px-3 py-1 text-sm font-semibold rounded transition shadow-sm bg-[#00ED64] text-black ${
+              isRunning
+                ? "cursor-wait opacity-70"
+                : !connected
                 ? "cursor-not-allowed opacity-50"
-                : "hover:bg-[#00d45a] cursor-pointer active:scale-95"
-              }`}
+                : "hover:bg-[#00D45A] cursor-pointer active:scale-95"
+            }`}
           >
             {isRunning ? (
               <>
@@ -175,7 +195,10 @@ export function App() {
                 <label htmlFor="minimap-toggle" className="text-xs font-medium text-[var(--color-text-secondary)] cursor-pointer select-none">
                   Show Minimap
                 </label>
-                <div className="relative inline-flex items-center">
+                <label
+                  htmlFor="minimap-toggle"
+                  className="relative inline-flex items-center cursor-pointer"
+                >
                   <input
                     type="checkbox"
                     id="minimap-toggle"
@@ -183,8 +206,9 @@ export function App() {
                     onChange={(e) => setShowMinimap(e.target.checked)}
                     className="sr-only peer"
                   />
-                  <div className="w-9 h-5 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-tessera-600 cursor-pointer"></div>
-                </div>
+                  <div className="w-9 h-5 bg-slate-700 peer-focus:outline-none rounded-full peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-tessera-600"></div>
+                </label>
+
               </div>
 
               <div className="flex items-center justify-between">

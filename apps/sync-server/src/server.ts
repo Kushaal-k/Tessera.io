@@ -55,6 +55,12 @@ const connectionOptions = { host: REDIS_HOST, port: REDIS_PORT, maxRetriesPerReq
 const QUEUE_NAME = "code-execution";
 
 const executionQueue = new Queue<ExecutionTask>(QUEUE_NAME, { connection: connectionOptions });
+
+// A single, shared QueueEvents instance is intentionally reused across all concurrent
+// execute-code requests. BullMQ's QueueEvents opens a dedicated Redis connection, so
+// creating one per request would exhaust the Redis connection pool under load.
+// job.waitUntilFinished(queueEvents) correctly filters events by the specific job ID
+// internally, so there is no risk of cross-job event mixups.
 const queueEvents = new QueueEvents(QUEUE_NAME, { connection: connectionOptions });
 
 io.on("connection", (socket) => {
@@ -147,7 +153,7 @@ io.on("connection", (socket) => {
 
       console.log(`[sync-server] enqueuing code execution ${taskId} [lang=${payload.language}]`);
       const job = await executionQueue.add("execute", task, { jobId: taskId });
-      
+
       const result = await job.waitUntilFinished(queueEvents);
       console.log(`[sync-server] execution ${taskId} finished`);
       socket.emit("execution-result", result as ExecutionResult);
@@ -189,8 +195,7 @@ server.listen(PORT, () => {
 async function gracefulShutdown() {
   console.log("shutting down sync-server…");
   try {
-    await executionQueue.close();
-    await queueEvents.close();
+    await Promise.all([executionQueue.close(), queueEvents.close()]);
   } catch (err) {
     console.error("error closing bullmq handles:", err);
   }
