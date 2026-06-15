@@ -92,24 +92,52 @@ const presenceCleanupTimer = setInterval(
 
 );
 
-
-// Remove participants whose heartbeat timestamps have expired.
-// This protects against ghost users caused by network drops,
-// browser crashes, and missed disconnect events.
 function cleanupStaleParticipants(): void {
   const now = Date.now();
+
   for (const [, room] of rooms) {
     for (const [socketId, presence] of room.participants) {
       if (now - presence.lastSeen > PRESENCE_TIMEOUT_MS) {
+
+        // Remove any awareness states associated with the expired participant.
+        // This ensures cursors and presence indicators are cleaned up even when
+        // a client disappears without a graceful disconnect (network loss,
+        // browser crash, etc.).
+        const expiredClientIds: number[] = [];
+
+        room.awareness.getStates().forEach((state, clientId) => {
+          const awarenessParticipant =
+            (state as Record<string, unknown>)["participant"] as
+              Participant | undefined;
+
+          if (
+            awarenessParticipant &&
+            awarenessParticipant.id === presence.participant.id
+          ) {
+            expiredClientIds.push(clientId);
+          }
+        });
+
+        if (expiredClientIds.length > 0) {
+          removeAwarenessStates(
+            room.awareness,
+            expiredClientIds,
+            "presence-timeout",
+          );
+        }
+
         room.participants.delete(socketId);
+
         console.log(
-          `[presence] participant expired [socket=${socketId}]`
+          `[presence] participant expired [socket=${socketId}]`,
         );
       }
     }
-
   }
 }
+
+  
+
 
 io.on("connection", (socket) => {
   let currentRoomId: string | null = null;
