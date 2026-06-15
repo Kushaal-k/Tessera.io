@@ -1,9 +1,10 @@
 from fastapi import APIRouter
 from pydantic import BaseModel, Field
 from .db import get_collection
-from .config import settings
+from .embeddings import EmbeddingService
 
 router = APIRouter(prefix="/rag", tags=["RAG"])
+embedding_service = EmbeddingService()
 
 
 class IngestRequest(BaseModel):
@@ -55,15 +56,13 @@ def _split_into_chunks(text: str, chunk_size: int) -> list[str]:
 async def ingest(req: IngestRequest) -> IngestResponse:
     collection = get_collection()
     chunks = _split_into_chunks(req.content, req.chunk_size)
-
-    # Placeholder embedding — replace with real embedding provider later
-    placeholder_vector = [0.0] * settings.EMBEDDING_DIMENSIONS
+    embeddings = await embedding_service.embed_documents(chunks)
 
     documents = [
         {
             "file_path": req.file_path,
             "content": chunk,
-            "embedding": placeholder_vector,
+            "embedding": embeddings[idx],
             "chunk_index": idx,
         }
         for idx, chunk in enumerate(chunks)
