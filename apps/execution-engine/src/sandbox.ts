@@ -8,12 +8,73 @@ import type {
 
 const docker = new Dockerode({ socketPath: "/var/run/docker.sock" });
 
+/** Cleanly separated output streams parsed from a Docker log buffer. */
+export interface DemuxedStreams {
+  stdout: string;
+  stderr: string;
+}
+
+// Docker multiplexes stdout/stderr into a single stream when a container runs
+// without a TTY (`Tty: false`, our default). Every payload chunk is prefixed with
+// an 8-byte header: byte 0 is the stream type (0 = stdin, 1 = stdout, 2 = stderr),
+// bytes 1-3 are zero padding, and bytes 4-7 are the payload length as a big-endian
+// uint32. See https://docs.docker.com/engine/api/v1.43/#tag/Container/operation/ContainerAttach
+const STREAM_HEADER_SIZE = 8;
+const STREAM_TYPE_STDERR = 2;
+
+/**
+ * Parse a multiplexed Docker log buffer into separate `stdout` and `stderr`
+ * strings, stripping the 8-byte frame headers. If the buffer is not multiplexed
+ * (for example a raw stream from a TTY-allocated container), the bytes are
+ * returned as `stdout` rather than being corrupted or dropped.
+ */
+export function demuxDockerStream(buffer: Buffer): DemuxedStreams {
+  const stdoutChunks: Buffer[] = [];
+  const stderrChunks: Buffer[] = [];
+  let offset = 0;
+
+  while (offset + STREAM_HEADER_SIZE <= buffer.length) {
+    const streamType = buffer[offset];
+    const payloadLength = buffer.readUInt32BE(offset + 4);
+    const payloadStart = offset + STREAM_HEADER_SIZE;
+    const payloadEnd = payloadStart + payloadLength;
+
+    // A valid frame has a known stream type (0-2) and a length that stays within
+    // the buffer. Anything else means this isn't a multiplexed stream, so treat
+    // the remaining bytes as stdout instead of emitting garbage.
+    if (streamType === undefined || streamType > STREAM_TYPE_STDERR || payloadEnd > buffer.length) {
+      stdoutChunks.push(buffer.subarray(offset));
+      return joinStreams(stdoutChunks, stderrChunks);
+    }
+
+    const payload = buffer.subarray(payloadStart, payloadEnd);
+    (streamType === STREAM_TYPE_STDERR ? stderrChunks : stdoutChunks).push(payload);
+    offset = payloadEnd;
+  }
+
+  // Trailing bytes too short to form a header shouldn't occur for a well-formed
+  // stream, but keep them (as stdout) rather than silently dropping output.
+  if (offset < buffer.length) {
+    stdoutChunks.push(buffer.subarray(offset));
+  }
+
+  return joinStreams(stdoutChunks, stderrChunks);
+}
+
+function joinStreams(stdoutChunks: Buffer[], stderrChunks: Buffer[]): DemuxedStreams {
+  return {
+    stdout: Buffer.concat(stdoutChunks).toString("utf-8"),
+    stderr: Buffer.concat(stderrChunks).toString("utf-8"),
+  };
+}
+
 const LANGUAGE_IMAGES: Record<SupportedLanguage, string> = {
   typescript: "node:20-slim",
   python: "python:3.12-slim",
   cpp: "gcc:14",
   java: "eclipse-temurin:21-jdk-alpine",
   rust: "rust:1.75-slim",
+  go: "golang:1.20-alpine",
 };
 
 const LANGUAGE_COMMANDS: Record<
@@ -25,6 +86,11 @@ const LANGUAGE_COMMANDS: Record<
   cpp: (code) => ["sh", "-c", `echo '${code.replace(/'/g, "'\\''")}' > /tmp/main.cpp && g++ -o /tmp/main /tmp/main.cpp && /tmp/main`],
   java: (code) => ["sh", "-c", `echo '${code.replace(/'/g, "'\\''")}' > /tmp/Main.java && javac /tmp/Main.java -d /tmp && java -cp /tmp Main`],
   rust: (code) => ["sh", "-c", `echo '${code.replace(/'/g, "'\\''")}' > /tmp/main.rs && rustc /tmp/main.rs -o /tmp/main && /tmp/main`],
+  go: (code) => [
+  "sh",
+  "-c",
+  `echo '${code.replace(/'/g, "'\\''")}' > /tmp/main.go && go run /tmp/main.go`,
+],
 };
 
 const DEFAULT_MEMORY_LIMIT_MB = 256;
@@ -85,7 +151,7 @@ export async function executeInSandbox(
     container = await docker.createContainer({
       Image: image,
       Cmd: cmd,
-      User: "sandbox",
+      User: "1000",
       WorkingDir: "/tmp",
       HostConfig: {
         Runtime: config.runtime,
@@ -131,7 +197,8 @@ export async function executeInSandbox(
     }
 
     const logs = await container.logs({ stdout: true, stderr: true, follow: false });
-    const logOutput = typeof logs === "string" ? logs : logs.toString("utf-8");
+    const logBuffer = Buffer.isBuffer(logs) ? logs : Buffer.from(logs as unknown as string, "utf-8");
+    const { stdout, stderr } = demuxDockerStream(logBuffer);
 
     const inspectInfo = await container.inspect();
     const exitCode = inspectInfo.State.ExitCode as number;
@@ -140,8 +207,8 @@ export async function executeInSandbox(
     return {
       taskId: task.id,
       status: exitCode === 0 ? "completed" : "failed",
-      stdout: logOutput,
-      stderr: "",
+      stdout,
+      stderr,
       exitCode,
       durationMs: performance.now() - startTime,
     };

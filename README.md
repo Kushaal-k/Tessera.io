@@ -131,17 +131,13 @@ If neither command applies, follow your distribution's Docker startup instructio
 1. **Start infrastructure services (Redis and MongoDB):**
 
 ```bash
-# Start Redis (if not already running)
-docker run -d --name tessera-redis -p 127.0.0.1:6379:6379 redis:7-alpine
-
-# Start MongoDB (if not already running)
-docker run -d --name tessera-mongo -p 127.0.0.1:27017:27017 mongo:7
+# Start Redis and MongoDB together using Docker Compose
+docker compose up -d
 ```
 
-If a container with the same name already exists, start it instead:
-
+If containers already exist from a previous run:
 ```bash
-docker start tessera-redis tessera-mongo
+docker compose start
 ```
 
 1. **Set up the Python AI service:**
@@ -171,22 +167,19 @@ node --version
 npm --version
 docker version
 python --version
+
 ```
 
 1. **Start infrastructure services (Redis and MongoDB):**
 
 ```powershell
-# Start Redis (if not already running)
-docker run -d --name tessera-redis -p 127.0.0.1:6379:6379 redis:7-alpine
-
-# Start MongoDB (if not already running)
-docker run -d --name tessera-mongo -p 127.0.0.1:27017:27017 mongo:7
+# Start Redis and MongoDB together using Docker Compose
+docker compose up -d
 ```
 
-If a container with the same name already exists, start it instead:
-
+If containers already exist from a previous run:
 ```powershell
-docker start tessera-redis tessera-mongo
+docker compose start
 ```
 
 1. **Set up the Python AI service:**
