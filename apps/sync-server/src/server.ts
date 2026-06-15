@@ -12,6 +12,7 @@ import type {
   ExecutionTask,
   ExecutionResult,
 } from "@tessera/shared-types";
+import { validateExecuteCodePayload } from "./executeCodeValidation";
 
 interface RoomState {
   readonly doc: Y.Doc;
@@ -135,15 +136,36 @@ io.on("connection", (socket) => {
     if (!currentRoomId) return;
 
     const taskId = crypto.randomUUID();
+    const validation = validateExecuteCodePayload({
+      code: (payload as { code?: unknown }).code,
+      language: (payload as { language?: unknown }).language,
+    });
+
+
+
+    if (!validation.ok) {
+      io.to(currentRoomId).emit("execution-result", {
+        taskId,
+        status: "failed",
+        stdout: "",
+        stderr: validation.reason,
+        exitCode: 1,
+        durationMs: 0,
+        triggeredBy: currentParticipant ?? undefined,
+      } satisfies ExecutionResult);
+      return;
+    }
+
     try {
       const task: ExecutionTask = {
         id: taskId,
-        code: payload.code,
-        language: payload.language,
+        code: validation.code,
+        language: validation.language,
         timeoutMs: 5000,
         roomId: currentRoomId,
         createdAt: new Date().toISOString(),
       };
+
 
       if (currentParticipant) {
         io.to(currentRoomId).emit("execution-started", {
@@ -153,8 +175,9 @@ io.on("connection", (socket) => {
 
       console.log(`[sync-server] enqueuing code execution ${taskId} [lang=${payload.language}]`);
       const job = await executionQueue.add("execute", task, { jobId: taskId });
-      
+
       const result = await job.waitUntilFinished(queueEvents);
+
       console.log(`[sync-server] execution ${taskId} finished`);
       io.to(currentRoomId).emit("execution-result", {
         ...(result as ExecutionResult),
