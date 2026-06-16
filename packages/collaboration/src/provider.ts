@@ -17,7 +17,7 @@ export class TesseraSocketProvider {
 
   private awarenessThrottleTimer: ReturnType<typeof setTimeout> | null = null;
   private pendingAwarenessClients = new Set<number>();
-  
+
   private static readonly AWARENESS_THROTTLE_MS = 50;
 
   constructor(options: TesseraProviderOptions) {
