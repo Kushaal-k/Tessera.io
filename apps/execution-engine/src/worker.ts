@@ -10,11 +10,20 @@ const worker = new Worker<ExecutionTask, ExecutionResult>(
   QUEUE_NAME,
   async (job: Job<ExecutionTask>): Promise<ExecutionResult> => {
     console.log(`processing job ${job.id ?? "unknown"} [lang=${job.data.language}]`);
-    return executeInSandbox(job.data);
+    const sandboxPromise = executeInSandbox(job.data);
+    const hangTimeout = job.data.timeoutMs + 30_000;
+    let timerId: NodeJS.Timeout;
+    const timeout = new Promise<never>((_, reject) => {
+      timerId = setTimeout(() => reject(new Error("Sandbox hung indefinitely")), hangTimeout);
+    });
+    return Promise.race([sandboxPromise, timeout]).finally(() => clearTimeout(timerId));
   },
   {
     connection,
     concurrency: Number(process.env["WORKER_CONCURRENCY"] ?? 3),
+    lockDuration: 60000,
+    stalledInterval: 30000,
+    maxStalledCount: 3,
   },
 );
 
