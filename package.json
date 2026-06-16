@@ -19,11 +19,10 @@
     "cleanup": "npm run cleanup --workspace=@tessera/execution-engine"
   },
   "devDependencies": {
+    "@tailwindcss/oxide": "^4.0.0",
     "turbo": "^2.9.16",
     "typescript": "^6.0.3",
-    "vitest": "^4.1.7",
-    "@tailwindcss/oxide": "^4.0.0",
-    "@tailwindcss/oxide-linux-x64-gnu": "^4.0.0"
+    "vitest": "^4.1.7"
   },
   "engines": {
     "node": ">=20.0.0",
