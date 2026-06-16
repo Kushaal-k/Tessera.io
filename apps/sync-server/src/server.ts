@@ -66,6 +66,7 @@ const queueEvents = new QueueEvents(QUEUE_NAME, { connection: connectionOptions 
 io.on("connection", (socket) => {
   let currentRoomId: string | null = null;
   let currentParticipant: Participant | null = null;
+  let currentClientId: number | null = null;
 
   socket.on("join-room", (payload) => {
     const { roomId, participant } = payload;
@@ -74,6 +75,17 @@ io.on("connection", (socket) => {
     currentRoomId = roomId;
     currentParticipant = participant;
     room.participants.set(socket.id, participant);
+
+    const onAwarenessUpdate = ({ added, updated }: any, origin: any) => {
+      if (origin === socket) {
+        const activeIds = [...added, ...updated];
+        if (activeIds.length > 0) {
+          currentClientId = activeIds[0];
+          room.awareness.off("update", onAwarenessUpdate);
+        }
+      }
+    };
+    room.awareness.on("update", onAwarenessUpdate);
 
     void socket.join(roomId);
 
@@ -177,8 +189,8 @@ io.on("connection", (socket) => {
 
     room.participants.delete(socket.id);
 
-    if (currentParticipant) {
-      removeAwarenessStates(room.awareness, [room.awareness.clientID], socket);
+    if (currentParticipant && currentClientId !== null) {
+      removeAwarenessStates(room.awareness, [currentClientId], socket);
     }
 
     if (room.participants.size === 0) {
