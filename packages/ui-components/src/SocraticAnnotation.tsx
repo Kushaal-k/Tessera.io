@@ -5,6 +5,9 @@ export interface SocraticAnnotationProps {
   readonly onClose: () => void;
   readonly className?: string;
   readonly title?: string;
+  readonly isLoading?: boolean;
+  readonly questions?: string[];
+  readonly hint?: string;
 }
 
 export function SocraticAnnotation({
@@ -12,6 +15,9 @@ export function SocraticAnnotation({
   onClose,
   className = "",
   title = "Socratic Mentor",
+  isLoading = false,
+  questions = [],
+  hint = "",
 }: SocraticAnnotationProps) {
   return (
     <div className={`flex w-full flex-col rounded-md border border-[var(--color-border)] bg-[var(--color-surface)] shadow-lg ${className}`}>
@@ -31,12 +37,21 @@ export function SocraticAnnotation({
       <div className="p-3 text-sm text-slate-300">
         {children || (
           <div className="flex flex-col gap-2">
-            <p>🤔 Let's think about this selected code.</p>
-            <ul className="list-disc pl-5 text-slate-400 space-y-1 mt-2">
-              <li>What is the primary goal of this snippet?</li>
-              <li>Are there any edge cases we might be missing?</li>
-              <li>How does this fit into the broader architecture?</li>
-            </ul>
+            {isLoading ? (
+              <p className="animate-pulse">🤔 Analyzing your code...</p>
+            ) : questions.length > 0 ? (
+              <>
+                <p>🤔 Let's think about this selected code.</p>
+                <ul className="list-disc pl-5 text-slate-400 space-y-1 mt-2">
+                  {questions.map((q, idx) => (
+                    <li key={idx}>{q}</li>
+                  ))}
+                </ul>
+                {hint && <p className="mt-2 text-tessera-400 font-medium">💡 Hint: {hint}</p>}
+              </>
+            ) : (
+              <p>No suggestions available at this time.</p>
+            )}
           </div>
         )}
       </div>

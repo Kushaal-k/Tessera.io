@@ -62,6 +62,8 @@ export function CollaborativeEditor({
           }
 
           const lineToInsert = selection && !selection.isEmpty() ? selection.endLineNumber : position.lineNumber;
+          const currentModel = ed.getModel();
+          const codeSnippet = currentModel ? (selection && !selection.isEmpty() ? currentModel.getValueInRange(selection) : currentModel.getLineContent(position.lineNumber)) : "";
 
           ed.changeViewZones((changeAccessor) => {
             const domNode = document.createElement("div");
@@ -81,15 +83,33 @@ export function CollaborativeEditor({
               viewZoneRootRef.current = null;
             };
 
-            root.render(
-              <div style={{ padding: "8px" }}>
-                <SocraticAnnotation onClose={closeZone} />
-              </div>
-            );
+            const renderAnnotation = (isLoading: boolean, questions: string[] = [], hint: string = "") => {
+              root.render(
+                <div style={{ padding: "8px" }}>
+                  <SocraticAnnotation onClose={closeZone} isLoading={isLoading} questions={questions} hint={hint} />
+                </div>
+              );
+            };
+
+            renderAnnotation(true);
+
+            fetch("http://localhost:8000/mentor/ask", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ code_snippet: codeSnippet, language })
+            })
+            .then(res => res.json())
+            .then(data => {
+              renderAnnotation(false, data.guiding_questions, data.hint);
+            })
+            .catch(err => {
+              console.error(err);
+              renderAnnotation(false, ["Could not reach mentor API. Ensure backend is running."], "");
+            });
 
             const viewZoneId = changeAccessor.addZone({
               afterLineNumber: lineToInsert,
-              heightInLines: 8,
+              heightInLines: 10,
               domNode: domNode,
               marginDomNode: null,
             });

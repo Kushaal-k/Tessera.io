@@ -9,6 +9,7 @@ from fastapi.responses import JSONResponse
 from .config import settings
 from .db import connect_db, close_db, check_connection
 from .rag import router as rag_router
+from .mentor import router as mentor_router
 from .mcp_server import mcp
 
 logger = logging.getLogger("tessera.ai.timing")
@@ -65,6 +66,7 @@ async def log_request_timing(request: Request, call_next):
 
 
 app.include_router(rag_router)
+app.include_router(mentor_router)
 app.mount("/mcp", mcp.sse_app())
 
 
