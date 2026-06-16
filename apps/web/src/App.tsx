@@ -18,7 +18,6 @@ const FILE_NAMES: Record<SupportedLanguage, string> = {
   java: "Main.java",
   rust: "main.rs",
   javascript: "main.js",
-  go: "main.go",
   ruby: "main.rb"
 };
 
@@ -71,7 +70,6 @@ export function App() {
     if (!ytext) return;
     downloadTextFile(ytext.toString(), FILE_NAMES[language]);
   };
-  
   return (
     <div className="flex h-screen flex-col bg-[var(--color-bg)]">
       {/* Header */}
@@ -97,7 +95,6 @@ export function App() {
               <option value="java">Java</option>
               <option value="rust">Rust</option>
               <option value="javascript">JavaScript</option>
-              <option value="go">Go</option>
               <option value="ruby">Ruby</option>
             </select>
           </div>

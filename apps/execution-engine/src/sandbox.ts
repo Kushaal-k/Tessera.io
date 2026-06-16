@@ -15,7 +15,6 @@ const LANGUAGE_IMAGES: Record<SupportedLanguage, string> = {
   java: "eclipse-temurin:21-jdk-alpine",
   rust: "rust:1.75-slim",
   javascript: "node:20-slim",
-  go: "golang:1.21-alpine",
   ruby: "ruby:3.2-slim",
 };
 
@@ -29,7 +28,6 @@ const LANGUAGE_COMMANDS: Record<
   java: (code) => ["sh", "-c", `echo '${code.replace(/'/g, "'\\''")}' > /tmp/Main.java && javac /tmp/Main.java -d /tmp && java -cp /tmp Main`],
   rust: (code) => ["sh", "-c", `echo '${code.replace(/'/g, "'\\''")}' > /tmp/main.rs && rustc /tmp/main.rs -o /tmp/main && /tmp/main`],
   javascript: (code) => ["node", "-e", code],
-  go: (code) => ["sh", "-c", `echo '${code.replace(/'/g, "'\\''")}' > /tmp/main.go && go run /tmp/main.go`],
   ruby: (code) => ["ruby", "-e", code],
 };
 

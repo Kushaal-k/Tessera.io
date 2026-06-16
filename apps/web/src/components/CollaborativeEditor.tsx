@@ -21,7 +21,6 @@ const LANGUAGE_MAP: Record<SupportedLanguage, string> = {
   java: "java",
   rust: "rust",
   javascript: "javascript",
-  go: "go",
   ruby: "ruby"
 };
 
