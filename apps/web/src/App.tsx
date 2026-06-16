@@ -5,6 +5,7 @@ import {
   useCollaboration,
   createDefaultParticipant,
 } from "./hooks/useCollaboration.js";
+import { isMacOS, getExecutionShortcutText } from "./utils/platformDetection.js";
 import type { SyncConnectionConfig, SupportedLanguage, ExecutionResult } from "@tessera/shared-types";
 import { downloadTextFile } from "./utils/downloadUtils.js";
 
@@ -56,6 +57,21 @@ export function App() {
     };
   }, [socket]);
 
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      const isExecutionShortcut = isMacOS() ? event.metaKey : event.ctrlKey;
+      if (isExecutionShortcut && event.key === "Enter") {
+        event.preventDefault();
+        if (!isRunning && connected) {
+          handleRunCode();
+        }
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [socket, ytext, isRunning, connected]);
+
   const handleRunCode = () => {
     if (!socket || !ytext || isRunning) return;
     setIsRunning(true);
@@ -103,6 +119,7 @@ export function App() {
           <button
             onClick={handleRunCode}
             disabled={!connected || isRunning}
+            title={`Run code (${getExecutionShortcutText()})`}
             className={`flex items-center gap-1.5 px-3 py-1 text-sm font-semibold rounded transition shadow-sm ${
               isRunning
                 ? "bg-slate-700 text-slate-400 cursor-not-allowed"
@@ -180,7 +197,10 @@ export function App() {
                 <label htmlFor="minimap-toggle" className="text-xs font-medium text-slate-300 cursor-pointer select-none">
                   Show Minimap
                 </label>
-                <div className="relative inline-flex items-center">
+                <label
+                  htmlFor="minimap-toggle"
+                  className="relative inline-flex items-center cursor-pointer"
+                >
                   <input
                     type="checkbox"
                     id="minimap-toggle"
@@ -188,8 +208,9 @@ export function App() {
                     onChange={(e) => setShowMinimap(e.target.checked)}
                     className="sr-only peer"
                   />
-                  <div className="w-9 h-5 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-tessera-600 cursor-pointer"></div>
-                </div>
+                  <div className="w-9 h-5 bg-slate-700 peer-focus:outline-none rounded-full peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-tessera-600"></div>
+                </label>
+
               </div>
 
               <div className="flex items-center justify-between">
