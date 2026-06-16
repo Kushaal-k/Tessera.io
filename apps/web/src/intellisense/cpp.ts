@@ -1,4 +1,5 @@
 import type * as Monaco from "monaco-editor";
+import { createRange } from "./utils.js";
 
 const C_CPP_KEYWORDS = [
   "alignas",
@@ -71,20 +72,6 @@ const STL_SUGGESTIONS = [
   "std::vector",
 ];
 
-function createRange(
-  monaco: typeof Monaco,
-  model: Monaco.editor.ITextModel,
-  position: Monaco.Position,
-) {
-  const word = model.getWordUntilPosition(position);
-
-  return new monaco.Range(
-    position.lineNumber,
-    word.startColumn,
-    position.lineNumber,
-    word.endColumn,
-  );
-}
 
 function createHashAwareRange(
   monaco: typeof Monaco,

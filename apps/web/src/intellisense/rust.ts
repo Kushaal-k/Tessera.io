@@ -1,15 +1,10 @@
 import type * as Monaco from "monaco-editor";
+import { createRange } from "./utils.js";
 
-export function registerRustIntellisense(monaco: typeof Monaco): void {
-  monaco.languages.registerCompletionItemProvider("rust", {
+export function registerRustIntelliSense(monaco: typeof Monaco): Monaco.IDisposable {
+  return monaco.languages.registerCompletionItemProvider("rust", {
     provideCompletionItems(model, position) {
-      const word = model.getWordUntilPosition(position);
-      const range: Monaco.IRange = {
-        startLineNumber: position.lineNumber,
-        endLineNumber: position.lineNumber,
-        startColumn: word.startColumn,
-        endColumn: word.endColumn,
-      };
+      const range = createRange(monaco, model, position);
 
       const keywords: Monaco.languages.CompletionItem[] = [
         "fn", "let", "mut", "const", "static", "struct", "enum", "impl",
@@ -166,9 +161,7 @@ export function registerRustIntellisense(monaco: typeof Monaco): void {
         },
       ];
 
-      return {
-        suggestions: [...keywords, ...types, ...macros, ...traits, ...snippets],
-      };
+      return { suggestions: [...keywords, ...types, ...macros, ...traits, ...snippets] };
     },
   });
 }

@@ -129,6 +129,102 @@ async function ensureImageExists(image: string): Promise<void> {
   }
 }
 
+/**
+ * Parses and formats raw g++ compiler error logs into clean, boxed visual frames.
+ */
+export function formatCppCompilerErrors(rawLogs: string): string {
+  // Clean Docker stream multiplexing headers (starts with stream type 1 or 2, followed by 3 null bytes and 4 length bytes)
+  const cleanedLogs = rawLogs.replace(/[\u0000-\u0002]\u0000\u0000\u0000[\s\S]{4}/g, "");
+
+  const lines = cleanedLogs.split("\n");
+  const result: string[] = [];
+  let isBlockOpen = false;
+
+  const closeBlock = () => {
+    if (isBlockOpen) {
+      result.push("└" + "─".repeat(78));
+      result.push(""); // spacing line
+      isBlockOpen = false;
+    }
+  };
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    if (line === undefined) continue;
+
+    const trimmedLine = line.trim();
+
+    // Match compiler error/warning header e.g. /tmp/main.cpp:5:5: error: 'cout' is not a member of 'std'
+    const errorRegex = /^\/tmp\/main\.cpp:(\d+):(\d+):\s*(error|warning|note):\s*(.*)$/i;
+    const errorMatch = line.match(errorRegex);
+
+    if (errorMatch) {
+      closeBlock();
+
+      const lineNum = errorMatch[1] ?? "";
+      const colNum = errorMatch[2] ?? "";
+      const severity = errorMatch[3] ?? "";
+      const message = errorMatch[4] ?? "";
+
+      let label = "❌ ERROR";
+      if (severity.toLowerCase() === "warning") {
+        label = "⚠️ WARNING";
+      } else if (severity.toLowerCase() === "note") {
+        label = "ℹ️ NOTE";
+      }
+
+      const headerText = `── ${label} (Line ${lineNum}, Col ${colNum}) `;
+      const fillLength = Math.max(2, 80 - headerText.length);
+
+      result.push(`┌${headerText}${"─".repeat(fillLength)}`);
+      result.push(`│  Message: ${message}`);
+      result.push(`│`);
+      isBlockOpen = true;
+      continue;
+    }
+
+    // Match compiler context line e.g. /tmp/main.cpp: In function 'int main()':
+    const contextRegex = /^\/tmp\/main\.cpp:\s*In\s+function\s+['"](.*)['"]\s*:/i;
+    const contextMatch = line.match(contextRegex);
+    if (contextMatch) {
+      closeBlock();
+      const functionName = contextMatch[1] ?? "unknown";
+      result.push(`👉 In function '${functionName}':`);
+      result.push("");
+      continue;
+    }
+
+    if (isBlockOpen) {
+      if (trimmedLine === "") {
+        result.push("│");
+        continue;
+      }
+
+      const cleanedLine = line.replace(/\/tmp\/main\.cpp/g, "main.cpp");
+      const isCodeOrPointerLine = /^\s*\d*\s*\|/i.test(cleanedLine);
+
+      if (isCodeOrPointerLine) {
+        result.push(`│  ${cleanedLine.trimEnd()}`);
+      } else {
+        result.push(`│  ${cleanedLine}`);
+      }
+    } else {
+      if (trimmedLine !== "") {
+        result.push(line.replace(/\/tmp\/main\.cpp/g, "main.cpp"));
+      }
+    }
+  }
+
+  closeBlock();
+
+  // Trim trailing empty lines
+  while (result.length > 0 && result[result.length - 1] === "") {
+    result.pop();
+  }
+
+  return result.join("\n");
+}
+
 export async function executeInSandbox(
   task: ExecutionTask
 ): Promise<ExecutionResult> {
@@ -204,11 +300,16 @@ export async function executeInSandbox(
     const exitCode = inspectInfo.State.ExitCode as number;
     console.log(`[sandbox] container completed: ${container.id} | exitCode: ${exitCode} | duration: ${(performance.now() - startTime).toFixed(2)}ms`);
 
+    const formattedStderr =
+      task.language === "cpp" && exitCode !== 0
+        ? formatCppCompilerErrors(stderr)
+        : stderr;
+
     return {
       taskId: task.id,
       status: exitCode === 0 ? "completed" : "failed",
       stdout,
-      stderr,
+      stderr: formattedStderr,
       exitCode,
       durationMs: performance.now() - startTime,
     };
