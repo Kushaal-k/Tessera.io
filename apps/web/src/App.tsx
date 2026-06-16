@@ -17,6 +17,7 @@ const FILE_NAMES: Record<SupportedLanguage, string> = {
   python: "main.py",
   cpp: "main.cpp",
   java: "Main.java",
+  rust: "main.rs"
   rust: "main.rs",
   go: "main.go",
 };
@@ -39,7 +40,7 @@ export function App() {
     [participant],
   );
 
-  const { ytext, awareness, connected, socket } = useCollaboration(config);
+  const { ytext, awareness, connected, connectionStatus, socket } = useCollaboration(config);
 
   useEffect(() => {
     if (!socket) return;
@@ -57,19 +58,18 @@ export function App() {
   }, [socket]);
 
   useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      const isExecutionShortcut = isMacOS() ? event.metaKey : event.ctrlKey;
-      if (isExecutionShortcut && event.key === "Enter") {
-        event.preventDefault();
-        if (!isRunning && connected) {
-          handleRunCode();
-        }
+  const handleKeyDown = (event: KeyboardEvent) => {
+    const isExecutionShortcut = isMacOS() ? event.metaKey : event.ctrlKey;
+    if (isExecutionShortcut && event.key === "Enter") {
+      event.preventDefault();
+      if (!isRunning && connected) {
+        handleRunCode();
       }
-    };
-
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [socket, ytext, isRunning, connected]);
+    }
+  };
+  window.addEventListener("keydown", handleKeyDown);
+  return () => window.removeEventListener("keydown", handleKeyDown);
+}, [socket, ytext, isRunning, connected]);
 
   const handleRunCode = () => {
     if (!socket || !ytext || isRunning) return;
@@ -122,9 +122,9 @@ export function App() {
               isRunning
                 ? "bg-slate-700 text-slate-400 cursor-not-allowed"
                 : !connected
-                ? "bg-slate-800 text-slate-500 cursor-not-allowed"
-                : "bg-tessera-600 hover:bg-tessera-500 text-white cursor-pointer active:scale-95"
-            }`}
+                  ? "bg-slate-800 text-slate-500 cursor-not-allowed"
+                  : "bg-tessera-600 hover:bg-tessera-500 text-white cursor-pointer active:scale-95"
+              }`}
           >
             {isRunning ? (
               <>
@@ -161,11 +161,14 @@ export function App() {
 
           {/* Connection Indicator */}
           <div className="flex items-center gap-2 border-l border-[var(--color-border)] pl-4">
-            <span
-              className={`inline-block h-2 w-2 rounded-full ${connected ? "bg-emerald-400" : "bg-red-400 animate-pulse"}`}
-            />
+            <span className={`inline-block h-2 w-2 rounded-full ${connectionStatus === 'connected' ? 'bg-emerald-400' :
+                connectionStatus === 'reconnecting' ? 'bg-yellow-400 animate-pulse' :
+                  'bg-red-400 animate-pulse'
+              }`} />
             <span className="text-xs text-slate-400 font-medium">
-              {connected ? "Connected" : "Disconnected"}
+              {connectionStatus === 'connected' ? 'Connected' :
+                connectionStatus === 'reconnecting' ? 'Reconnecting...' :
+                  'Offline'}
             </span>
           </div>
         </div>
