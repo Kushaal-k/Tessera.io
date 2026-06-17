@@ -8,8 +8,11 @@
     "dev": "tsx watch src/worker.ts",
     "start": "node dist/worker.js",
     "typecheck": "tsc --noEmit",
+    "test": "vitest run --passWithNoTests",
     "clean": "rm -rf dist",
-    "lint": "eslint src --ext .ts"
+    "lint": "eslint src --ext .ts",
+    "cleanup": "tsx src/cleanup.ts",
+    "cleanup:docker": "npm run cleanup"
   },
   "dependencies": {
     "@tessera/shared-types": "*",
