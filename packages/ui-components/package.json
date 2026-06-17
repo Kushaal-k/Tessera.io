@@ -16,7 +16,8 @@
     "dev": "tsc --project tsconfig.build.json --watch",
     "typecheck": "tsc --noEmit",
     "clean": "rm -rf dist",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix"
   },
   "dependencies": {
     "@tessera/shared-types": "*"
