@@ -1,15 +1,16 @@
 from mcp.server.fastmcp import FastMCP
 from .config import settings
 from .db import get_collection
+from .embeddings import EmbeddingService
 
 mcp = FastMCP(settings.MCP_SERVER_NAME)
+embedding_service = EmbeddingService()
 
 
 @mcp.tool()
-async def search_codebase(
-    query_vector: list[float], top_k: int = 5
-) -> list[dict[str, object]]:
-    """Search the indexed codebase using vector similarity."""
+async def search_codebase(query: str, top_k: int = 5) -> list[dict[str, object]]:
+    """Search the indexed codebase for code similar to the given query."""
+    query_vector = await embedding_service.embed_query(query)
     collection = get_collection()
 
     pipeline = [
