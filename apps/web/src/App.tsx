@@ -1,4 +1,4 @@
-import { useMemo, useState, useEffect } from "react";
+import { useMemo, useState, useEffect, type ChangeEvent } from "react";
 import { SidePanel } from "@tessera/ui-components";
 import { CollaborativeEditor } from "./components/CollaborativeEditor.js";
 import {
@@ -21,6 +21,15 @@ const FILE_NAMES: Record<SupportedLanguage, string> = {
   java: "Main.java",
   rust: "main.rs",
   go: "main.go",
+};
+
+const STARTER_CODE: Record<SupportedLanguage, string> = {
+  typescript: 'console.log("Hello from TypeScript");\n',
+  python: 'print("Hello from Python")\n',
+  cpp: '#include <iostream>\n\nint main() {\n  std::cout << "Hello from C++" << std::endl;\n  return 0;\n}\n',
+  java: 'public class Main {\n  public static void main(String[] args) {\n    System.out.println("Hello from Java");\n  }\n}\n',
+  rust: 'fn main() {\n    println!("Hello from Rust");\n}\n',
+  go: 'package main\n\nimport "fmt"\n\nfunc main() {\n  fmt.Println("Hello from Go")\n}\n',
 };
 
 export function App() {
@@ -96,6 +105,41 @@ export function App() {
     });
   };
 
+  const handleLanguageChange = (event: ChangeEvent<HTMLSelectElement>) => {
+    const nextLanguage = event.target.value as SupportedLanguage;
+    if (nextLanguage === language) return;
+
+    if (!ytext) {
+      setLanguage(nextLanguage);
+      return;
+    }
+
+    const currentCode = ytext.toString();
+    if (currentCode.trim().length > 0) {
+      const shouldReplace = window.confirm(
+        `Switching to ${nextLanguage} will replace the current editor contents with ${FILE_NAMES[nextLanguage]} starter code. Continue?`,
+      );
+
+      if (!shouldReplace) return;
+    }
+
+    const replaceContents = () => {
+      if (ytext.length > 0) {
+        ytext.delete(0, ytext.length);
+      }
+      ytext.insert(0, STARTER_CODE[nextLanguage]);
+    };
+
+    if (ytext.doc) {
+      ytext.doc.transact(replaceContents);
+    } else {
+      replaceContents();
+    }
+
+    setLanguage(nextLanguage);
+    setOutput(null);
+  };
+
   const handleDownload = () => {
     if (!ytext) return;
     downloadTextFile(ytext.toString(), FILE_NAMES[language]);
@@ -116,7 +160,7 @@ export function App() {
             <span className="text-xs text-slate-400">Language:</span>
             <select
               value={language}
-              onChange={(e) => setLanguage(e.target.value as SupportedLanguage)}
+              onChange={handleLanguageChange}
               className="bg-[var(--color-bg)] text-sm text-white border border-[var(--color-border)] rounded px-2 py-1 focus:outline-none focus:border-tessera-500 font-medium"
             >
               <option value="typescript">TypeScript</option>
