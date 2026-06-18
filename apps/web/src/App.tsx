@@ -11,7 +11,9 @@ import type { SyncConnectionConfig, SupportedLanguage, ExecutionResult } from "@
 import { useDebouncedValue } from "./hooks/useDebouncedValue.js";
 import { downloadTextFile } from "./utils/downloadUtils.js";
 
-const SYNC_SERVER_URL = "http://localhost:4000";
+const DEFAULT_SYNC_SERVER_URL = "http://localhost:4000";
+const SYNC_SERVER_URL =
+  import.meta.env.VITE_SYNC_SERVER_URL ?? DEFAULT_SYNC_SERVER_URL;
 const DEFAULT_ROOM = "default-room";
 
 const FILE_NAMES: Record<SupportedLanguage, string> = {
