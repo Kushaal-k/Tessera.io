@@ -14,6 +14,7 @@ import { downloadTextFile } from "./utils/downloadUtils.js";
 const SYNC_SERVER_URL = "http://localhost:4000";
 const DEFAULT_ROOM = "default-room";
 
+
 export function App() {
   const participant = useMemo(() => createDefaultParticipant(), []);
   const [isRunning, setIsRunning] = useState(false);
@@ -50,7 +51,6 @@ export function App() {
 
   // Derive language from the active file's extension.
   const activeFile = files.find((f) => f.id === activeFileId) ?? null;
-  const activeLanguage = activeFile?.language ?? "typescript";
 
   // Derive Monaco editor language from file name to support plaintext/json/csv
   const editorLanguage = useMemo(() => {
