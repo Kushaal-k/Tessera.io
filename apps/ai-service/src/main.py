@@ -82,9 +82,7 @@ async def health_check() -> JSONResponse:
     models = {
         "mcp_server": settings.MCP_SERVER_NAME,
         "embedding_dimensions": settings.EMBEDDING_DIMENSIONS,
-        # The embedding pipeline is still a placeholder vector (see rag.py);
-        # surfaced here so operators can see it is not a real provider yet.
-        "embedding_provider": "placeholder",
+        "embedding_provider": settings.EMBEDDING_MODEL,
     }
 
     healthy = bool(database["connected"])
