@@ -154,7 +154,7 @@ export function App() {
                 : !connected || !activeFile
                 ? "bg-slate-800 text-slate-500 cursor-not-allowed"
                 : "bg-tessera-600 hover:bg-tessera-500 text-white cursor-pointer active:scale-95"
-            }`}
+              }`}
           >
             {isRunning ? (
               <>
@@ -236,7 +236,10 @@ export function App() {
                 <label htmlFor="minimap-toggle" className="text-xs font-medium text-slate-300 cursor-pointer select-none">
                   Show Minimap
                 </label>
-                <div className="relative inline-flex items-center">
+                <label
+                  htmlFor="minimap-toggle"
+                  className="relative inline-flex items-center cursor-pointer"
+                >
                   <input
                     type="checkbox"
                     id="minimap-toggle"

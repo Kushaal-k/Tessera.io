@@ -9,12 +9,73 @@ import type {
 
 const docker = new Dockerode({ socketPath: "/var/run/docker.sock" });
 
+/** Cleanly separated output streams parsed from a Docker log buffer. */
+export interface DemuxedStreams {
+  stdout: string;
+  stderr: string;
+}
+
+// Docker multiplexes stdout/stderr into a single stream when a container runs
+// without a TTY (`Tty: false`, our default). Every payload chunk is prefixed with
+// an 8-byte header: byte 0 is the stream type (0 = stdin, 1 = stdout, 2 = stderr),
+// bytes 1-3 are zero padding, and bytes 4-7 are the payload length as a big-endian
+// uint32. See https://docs.docker.com/engine/api/v1.43/#tag/Container/operation/ContainerAttach
+const STREAM_HEADER_SIZE = 8;
+const STREAM_TYPE_STDERR = 2;
+
+/**
+ * Parse a multiplexed Docker log buffer into separate `stdout` and `stderr`
+ * strings, stripping the 8-byte frame headers. If the buffer is not multiplexed
+ * (for example a raw stream from a TTY-allocated container), the bytes are
+ * returned as `stdout` rather than being corrupted or dropped.
+ */
+export function demuxDockerStream(buffer: Buffer): DemuxedStreams {
+  const stdoutChunks: Buffer[] = [];
+  const stderrChunks: Buffer[] = [];
+  let offset = 0;
+
+  while (offset + STREAM_HEADER_SIZE <= buffer.length) {
+    const streamType = buffer[offset];
+    const payloadLength = buffer.readUInt32BE(offset + 4);
+    const payloadStart = offset + STREAM_HEADER_SIZE;
+    const payloadEnd = payloadStart + payloadLength;
+
+    // A valid frame has a known stream type (0-2) and a length that stays within
+    // the buffer. Anything else means this isn't a multiplexed stream, so treat
+    // the remaining bytes as stdout instead of emitting garbage.
+    if (streamType === undefined || streamType > STREAM_TYPE_STDERR || payloadEnd > buffer.length) {
+      stdoutChunks.push(buffer.subarray(offset));
+      return joinStreams(stdoutChunks, stderrChunks);
+    }
+
+    const payload = buffer.subarray(payloadStart, payloadEnd);
+    (streamType === STREAM_TYPE_STDERR ? stderrChunks : stdoutChunks).push(payload);
+    offset = payloadEnd;
+  }
+
+  // Trailing bytes too short to form a header shouldn't occur for a well-formed
+  // stream, but keep them (as stdout) rather than silently dropping output.
+  if (offset < buffer.length) {
+    stdoutChunks.push(buffer.subarray(offset));
+  }
+
+  return joinStreams(stdoutChunks, stderrChunks);
+}
+
+function joinStreams(stdoutChunks: Buffer[], stderrChunks: Buffer[]): DemuxedStreams {
+  return {
+    stdout: Buffer.concat(stdoutChunks).toString("utf-8"),
+    stderr: Buffer.concat(stderrChunks).toString("utf-8"),
+  };
+}
+
 const LANGUAGE_IMAGES: Record<SupportedLanguage, string> = {
   typescript: "node:20-slim",
   python: "python:3.12-slim",
   cpp: "gcc:14",
   java: "eclipse-temurin:21-jdk-alpine",
   rust: "rust:1.75-slim",
+  go: "golang:1.20-alpine",
 };
 
 // ─────────────────────────────────────────────────────────────
@@ -157,6 +218,102 @@ async function ensureImageExists(image: string): Promise<void> {
   }
 }
 
+/**
+ * Parses and formats raw g++ compiler error logs into clean, boxed visual frames.
+ */
+export function formatCppCompilerErrors(rawLogs: string): string {
+  // Clean Docker stream multiplexing headers (starts with stream type 1 or 2, followed by 3 null bytes and 4 length bytes)
+  const cleanedLogs = rawLogs.replace(/[\u0000-\u0002]\u0000\u0000\u0000[\s\S]{4}/g, "");
+
+  const lines = cleanedLogs.split("\n");
+  const result: string[] = [];
+  let isBlockOpen = false;
+
+  const closeBlock = () => {
+    if (isBlockOpen) {
+      result.push("└" + "─".repeat(78));
+      result.push(""); // spacing line
+      isBlockOpen = false;
+    }
+  };
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    if (line === undefined) continue;
+
+    const trimmedLine = line.trim();
+
+    // Match compiler error/warning header e.g. /tmp/main.cpp:5:5: error: 'cout' is not a member of 'std'
+    const errorRegex = /^\/tmp\/main\.cpp:(\d+):(\d+):\s*(error|warning|note):\s*(.*)$/i;
+    const errorMatch = line.match(errorRegex);
+
+    if (errorMatch) {
+      closeBlock();
+
+      const lineNum = errorMatch[1] ?? "";
+      const colNum = errorMatch[2] ?? "";
+      const severity = errorMatch[3] ?? "";
+      const message = errorMatch[4] ?? "";
+
+      let label = "❌ ERROR";
+      if (severity.toLowerCase() === "warning") {
+        label = "⚠️ WARNING";
+      } else if (severity.toLowerCase() === "note") {
+        label = "ℹ️ NOTE";
+      }
+
+      const headerText = `── ${label} (Line ${lineNum}, Col ${colNum}) `;
+      const fillLength = Math.max(2, 80 - headerText.length);
+
+      result.push(`┌${headerText}${"─".repeat(fillLength)}`);
+      result.push(`│  Message: ${message}`);
+      result.push(`│`);
+      isBlockOpen = true;
+      continue;
+    }
+
+    // Match compiler context line e.g. /tmp/main.cpp: In function 'int main()':
+    const contextRegex = /^\/tmp\/main\.cpp:\s*In\s+function\s+['"](.*)['"]\s*:/i;
+    const contextMatch = line.match(contextRegex);
+    if (contextMatch) {
+      closeBlock();
+      const functionName = contextMatch[1] ?? "unknown";
+      result.push(`👉 In function '${functionName}':`);
+      result.push("");
+      continue;
+    }
+
+    if (isBlockOpen) {
+      if (trimmedLine === "") {
+        result.push("│");
+        continue;
+      }
+
+      const cleanedLine = line.replace(/\/tmp\/main\.cpp/g, "main.cpp");
+      const isCodeOrPointerLine = /^\s*\d*\s*\|/i.test(cleanedLine);
+
+      if (isCodeOrPointerLine) {
+        result.push(`│  ${cleanedLine.trimEnd()}`);
+      } else {
+        result.push(`│  ${cleanedLine}`);
+      }
+    } else {
+      if (trimmedLine !== "") {
+        result.push(line.replace(/\/tmp\/main\.cpp/g, "main.cpp"));
+      }
+    }
+  }
+
+  closeBlock();
+
+  // Trim trailing empty lines
+  while (result.length > 0 && result[result.length - 1] === "") {
+    result.pop();
+  }
+
+  return result.join("\n");
+}
+
 export async function executeInSandbox(
   task: ExecutionTask
 ): Promise<ExecutionResult> {
@@ -179,7 +336,7 @@ export async function executeInSandbox(
     container = await docker.createContainer({
       Image: image,
       Cmd: cmd,
-      User: "sandbox",
+      User: "1000",
       WorkingDir: "/tmp",
       HostConfig: {
         Runtime: config.runtime,
@@ -225,17 +382,23 @@ export async function executeInSandbox(
     }
 
     const logs = await container.logs({ stdout: true, stderr: true, follow: false });
-    const logOutput = typeof logs === "string" ? logs : logs.toString("utf-8");
+    const logBuffer = Buffer.isBuffer(logs) ? logs : Buffer.from(logs as unknown as string, "utf-8");
+    const { stdout, stderr } = demuxDockerStream(logBuffer);
 
     const inspectInfo = await container.inspect();
     const exitCode = inspectInfo.State.ExitCode as number;
     console.log(`[sandbox] container completed: ${container.id} | exitCode: ${exitCode} | duration: ${(performance.now() - startTime).toFixed(2)}ms`);
 
+    const formattedStderr =
+      task.language === "cpp" && exitCode !== 0
+        ? formatCppCompilerErrors(stderr)
+        : stderr;
+
     return {
       taskId: task.id,
       status: exitCode === 0 ? "completed" : "failed",
-      stdout: logOutput,
-      stderr: "",
+      stdout,
+      stderr: formattedStderr,
       exitCode,
       durationMs: performance.now() - startTime,
     };
