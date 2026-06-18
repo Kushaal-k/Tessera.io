@@ -180,6 +180,16 @@ const LANGUAGE_COMMANDS: Record<SupportedLanguage, CommandBuilder> = {
     const runSnippet = `rustc /tmp/${safeName} -o /tmp/main && /tmp/main`;
     return ["sh", "-c", buildMultiFileCommand(runSnippet, task.files)];
   },
+  go: (task) => {
+    if (task.files.length <= 1) {
+      const safe = task.code.replace(/'/g, "'\\''");
+      return ["sh", "-c", `echo '${safe}' > /tmp/main.go && go run /tmp/main.go`];
+    }
+    const entry = task.files.find((f) => f.content === task.code)?.name ?? "main.go";
+    const safeName = entry.replace(/[^a-zA-Z0-9._-]/g, "_");
+    const runSnippet = `go run /tmp/${safeName}`;
+    return ["sh", "-c", buildMultiFileCommand(runSnippet, task.files)];
+  },
 };
 
 const DEFAULT_MEMORY_LIMIT_MB = 256;
