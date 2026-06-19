@@ -6,7 +6,9 @@ import {
   createDefaultParticipant,
 } from "./hooks/useCollaboration.js";
 import { isMacOS, getExecutionShortcutText } from "./utils/platformDetection.js";
+import { setLocalParticipant } from "@tessera/collaboration";
 import type { SyncConnectionConfig, SupportedLanguage, ExecutionResult } from "@tessera/shared-types";
+import { useDebouncedValue } from "./hooks/useDebouncedValue.js";
 import { downloadTextFile } from "./utils/downloadUtils.js";
 
 const SYNC_SERVER_URL = "http://localhost:4000";
@@ -23,6 +25,8 @@ const FILE_NAMES: Record<SupportedLanguage, string> = {
 
 export function App() {
   const participant = useMemo(() => createDefaultParticipant(), []);
+  const [displayName, setDisplayName] = useState(participant.displayName);
+  const debouncedName = useDebouncedValue(displayName, 250);
   const [language, setLanguage] = useState<SupportedLanguage>("typescript");
   const [isRunning, setIsRunning] = useState(false);
   const [isAiPanelOpen, setIsAiPanelOpen] = useState(false);
@@ -40,6 +44,17 @@ export function App() {
   );
 
   const { ytext, awareness, connected, socket } = useCollaboration(config);
+
+  // Sync displayName into the shared awareness state whenever it changes.
+  // TesseraSocketProvider is already subscribed to awareness "update" events,
+  // so it will automatically propagate this to all connected peers.
+  useEffect(() => {
+    if (!awareness) return;
+    setLocalParticipant(awareness, {
+      ...participant,
+      displayName: debouncedName.trim() || "Anonymous",
+    });
+  }, [awareness, participant, debouncedName]);
 
   useEffect(() => {
     if (!socket) return;
@@ -174,7 +189,8 @@ export function App() {
       {/* Main content */}
       <div className="flex flex-1 overflow-hidden">
         {/* Sidebar */}
-        <aside className="w-56 shrink-0 border-r border-[var(--color-border)] bg-[var(--color-surface)] p-3 flex flex-col justify-between">
+        <aside className="w-56 shrink-0 border-r border-[var(--color-border)] bg-[var(--color-surface)] p-3 flex flex-col gap-4">
+          {/* Explorer section */}
           <div>
             <p className="text-xs font-semibold uppercase tracking-wider text-[var(--color-text-muted)]">
               Explorer
@@ -186,8 +202,32 @@ export function App() {
             </div>
           </div>
 
-          <div className="border-t border-[var(--color-border)] pt-4">
-            <p className="text-xs font-semibold uppercase tracking-wider text-[var(--color-text-muted)] mb-3">
+          {/* Display name section */}
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wider text-[var(--color-text-muted)] mb-2">
+              You
+            </p>
+            <div className="flex items-center gap-2">
+              <span
+                className="inline-block h-2 w-2 shrink-0 rounded-full"
+                style={{ backgroundColor: participant.cursorColor }}
+                aria-hidden="true"
+              />
+              <input
+                type="text"
+                value={displayName}
+                onChange={(e) => setDisplayName(e.target.value)}
+                maxLength={32}
+                placeholder="Display name"
+                aria-label="Your display name"
+                className="w-full rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-2 py-1 text-xs text-[var(--color-text)] placeholder-[var(--color-text-muted)] focus:border-tessera-500 focus:outline-none"
+              />
+            </div>
+          </div>
+
+          {/* Editor Settings section */}
+          <div className="mt-auto border-t border-[var(--color-border)] pt-4">
+            <p className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-3">
               Editor Settings
             </p>
             <div className="flex flex-col gap-3">
