@@ -7,7 +7,9 @@ import {
   createDefaultParticipant,
 } from "./hooks/useCollaboration.js";
 import { isMacOS, getExecutionShortcutText } from "./utils/platformDetection.js";
+import { setLocalParticipant } from "@tessera/collaboration";
 import type { SyncConnectionConfig, SupportedLanguage, ExecutionResult } from "@tessera/shared-types";
+import { useDebouncedValue } from "./hooks/useDebouncedValue.js";
 import { downloadTextFile } from "./utils/downloadUtils.js";
 
 const SYNC_SERVER_URL = "http://localhost:4000";
@@ -18,11 +20,14 @@ const FILE_NAMES: Record<SupportedLanguage, string> = {
   python: "main.py",
   cpp: "main.cpp",
   java: "Main.java",
-  rust: "main.rs"
+  rust: "main.rs",
+  go: "main.go",
 };
 
 export function App() {
   const participant = useMemo(() => createDefaultParticipant(), []);
+  const [displayName, setDisplayName] = useState(participant.displayName);
+  const debouncedName = useDebouncedValue(displayName, 250);
   const [language, setLanguage] = useState<SupportedLanguage>("typescript");
   const [isRunning, setIsRunning] = useState(false);
   const [isAiPanelOpen, setIsAiPanelOpen] = useState(false);
@@ -41,6 +46,17 @@ export function App() {
   );
 
   const { ydoc, ytext, awareness, connected, socket } = useCollaboration(config);
+
+  // Sync displayName into the shared awareness state whenever it changes.
+  // TesseraSocketProvider is already subscribed to awareness "update" events,
+  // so it will automatically propagate this to all connected peers.
+  useEffect(() => {
+    if (!awareness) return;
+    setLocalParticipant(awareness, {
+      ...participant,
+      displayName: debouncedName.trim() || "Anonymous",
+    });
+  }, [awareness, participant, debouncedName]);
 
   useEffect(() => {
     if (!socket) return;
@@ -134,6 +150,7 @@ export function App() {
               <option value="cpp">C++</option>
               <option value="java">Java</option>
               <option value="rust">Rust</option>
+              <option value="go">Go</option>
             </select>
           </div>
 
@@ -142,13 +159,12 @@ export function App() {
             onClick={handleRunCode}
             disabled={!connected || isRunning}
             title={`Run code (${getExecutionShortcutText()})`}
-            className={`flex items-center gap-1.5 px-3 py-1 text-sm font-semibold rounded transition shadow-sm ${
-              isRunning
-                ? "bg-slate-700 text-slate-400 cursor-not-allowed"
-                : !connected
+            className={`flex items-center gap-1.5 px-3 py-1 text-sm font-semibold rounded transition shadow-sm ${isRunning
+              ? "bg-slate-700 text-slate-400 cursor-not-allowed"
+              : !connected
                 ? "bg-slate-800 text-slate-500 cursor-not-allowed"
                 : "bg-tessera-600 hover:bg-tessera-500 text-white cursor-pointer active:scale-95"
-            }`}
+              }`}
           >
             {isRunning ? (
               <>
@@ -199,7 +215,8 @@ export function App() {
       {/* Main content */}
       <div className="flex flex-1 overflow-hidden">
         {/* Sidebar */}
-        <aside className="w-56 shrink-0 border-r border-[var(--color-border)] bg-[var(--color-surface)] p-3 flex flex-col justify-between">
+        <aside className="w-56 shrink-0 border-r border-[var(--color-border)] bg-[var(--color-surface)] p-3 flex flex-col gap-4">
+          {/* Explorer section */}
           <div>
             <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">
               Explorer
@@ -211,7 +228,31 @@ export function App() {
             </div>
           </div>
 
-          <div className="border-t border-[var(--color-border)] pt-4">
+          {/* Display name section */}
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">
+              You
+            </p>
+            <div className="flex items-center gap-2">
+              <span
+                className="inline-block h-2 w-2 shrink-0 rounded-full"
+                style={{ backgroundColor: participant.cursorColor }}
+                aria-hidden="true"
+              />
+              <input
+                type="text"
+                value={displayName}
+                onChange={(e) => setDisplayName(e.target.value)}
+                maxLength={32}
+                placeholder="Display name"
+                aria-label="Your display name"
+                className="w-full rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-2 py-1 text-xs text-slate-200 placeholder-slate-500 focus:border-tessera-500 focus:outline-none"
+              />
+            </div>
+          </div>
+
+          {/* Editor Settings section */}
+          <div className="mt-auto border-t border-[var(--color-border)] pt-4">
             <p className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-3">
               Editor Settings
             </p>
@@ -220,7 +261,10 @@ export function App() {
                 <label htmlFor="minimap-toggle" className="text-xs font-medium text-slate-300 cursor-pointer select-none">
                   Show Minimap
                 </label>
-                <div className="relative inline-flex items-center">
+                <label
+                  htmlFor="minimap-toggle"
+                  className="relative inline-flex items-center cursor-pointer"
+                >
                   <input
                     type="checkbox"
                     id="minimap-toggle"
@@ -228,8 +272,9 @@ export function App() {
                     onChange={(e) => setShowMinimap(e.target.checked)}
                     className="sr-only peer"
                   />
-                  <div className="w-9 h-5 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-tessera-600 cursor-pointer"></div>
-                </div>
+                  <div className="w-9 h-5 bg-slate-700 peer-focus:outline-none rounded-full peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-tessera-600"></div>
+                </label>
+
               </div>
 
               <div className="flex items-center justify-between">
