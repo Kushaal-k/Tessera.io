@@ -3,7 +3,7 @@ import { vi, describe, expect, it, beforeEach } from "vitest";
 // Shared reference object to control mock behavior dynamically per test
 const mockState = {
   exitCode: 0,
-  logsBuffer: Buffer.alloc(0),
+  logsBuffer: Buffer.alloc(0) as any,
   waitDelayMs: 0,
 };
 
@@ -66,9 +66,11 @@ describe("Java E2E execution tests", () => {
 
     const task = {
       id: "java-success-task",
+      roomId: "test-room",
       language: "java" as const,
       code: 'public class Main { public static void main(String[] args) { System.out.println("Hello, Java!"); } }',
       timeoutMs: 2000,
+      createdAt: new Date().toISOString(),
     };
 
     const result = await executeInSandbox(task);
@@ -86,9 +88,11 @@ describe("Java E2E execution tests", () => {
 
     const task = {
       id: "java-failed-task",
+      roomId: "test-room",
       language: "java" as const,
       code: 'public class Main { public static void main(String[] args) { System.out.println("Invalid code") } }',
       timeoutMs: 2000,
+      createdAt: new Date().toISOString(),
     };
 
     const result = await executeInSandbox(task);
@@ -106,9 +110,11 @@ describe("Java E2E execution tests", () => {
 
     const task = {
       id: "java-timeout-task",
+      roomId: "test-room",
       language: "java" as const,
       code: "public class Main { public static void main(String[] args) { while (true) {} } }",
       timeoutMs: 100, // short timeout triggers timeout branch
+      createdAt: new Date().toISOString(),
     };
 
     const result = await executeInSandbox(task);
