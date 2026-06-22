@@ -237,7 +237,8 @@ export function App() {
                       key={u.id}
                       style={{ borderColor: u.cursorColor }}
                       className="relative flex h-6 w-6 items-center justify-center rounded-full border-2 bg-slate-800 text-[10px] font-bold text-white shadow-sm ring-1 ring-slate-900 transition-transform duration-200 hover:scale-110 hover:z-10"
-                      title={u.displayName + (isLocal ? " (You)" : "")}
+                      title={`${u.displayName}${isLocal ? " (You)" : ""}`}
+                      aria-label={`${u.displayName}${isLocal ? " (You)" : ""}`}
                     >
                       {initial}
                     </div>
