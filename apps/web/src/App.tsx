@@ -6,7 +6,8 @@ import {
   createDefaultParticipant,
 } from "./hooks/useCollaboration.js";
 import { isMacOS, getExecutionShortcutText } from "./utils/platformDetection.js";
-import { setLocalParticipant } from "@tessera/collaboration";
+import { setLocalParticipant, onPeersChanged, getRemotePeers } from "@tessera/collaboration";
+import type { PeerState } from "@tessera/collaboration";
 import type { SyncConnectionConfig, SupportedLanguage, ExecutionResult } from "@tessera/shared-types";
 import { useDebouncedValue } from "./hooks/useDebouncedValue.js";
 import { downloadTextFile } from "./utils/downloadUtils.js";
@@ -44,6 +45,56 @@ export function App() {
   );
 
   const { ytext, awareness, connected, socket } = useCollaboration(config);
+
+  const [knownUsers, setKnownUsers] = useState<Map<string, { id: string; displayName: string; cursorColor: string; online: boolean }>>(new Map());
+
+  // Synchronize remote peers and maintain a local registry of seen collaborators (online / offline)
+  useEffect(() => {
+    if (!awareness) return;
+
+    const updatePeers = (currentPeers: readonly PeerState[]) => {
+      setKnownUsers((prev) => {
+        const next = new Map(prev);
+
+        // Mark all previously seen remote users as offline first
+        for (const [id, user] of next.entries()) {
+          if (id !== participant.id) {
+            next.set(id, { ...user, online: false });
+          }
+        }
+
+        // Add or update current online remote peers
+        currentPeers.forEach((peer) => {
+          if (peer.participant) {
+            next.set(peer.participant.id, {
+              id: peer.participant.id,
+              displayName: peer.participant.displayName || "Anonymous",
+              cursorColor: peer.participant.cursorColor || "#64748b",
+              online: true,
+            });
+          }
+        });
+
+        // Ensure local user is always represented as online
+        next.set(participant.id, {
+          id: participant.id,
+          displayName: displayName.trim() || "Anonymous",
+          cursorColor: participant.cursorColor,
+          online: true,
+        });
+
+        return next;
+      });
+    };
+
+    // Set initial peers list
+    updatePeers(getRemotePeers(awareness));
+
+    // Listen to changes in the awareness state
+    return onPeersChanged(awareness, (newPeers) => {
+      updatePeers(newPeers);
+    });
+  }, [awareness, participant, displayName]);
 
   // Sync displayName into the shared awareness state whenever it changes.
   // TesseraSocketProvider is already subscribed to awareness "update" events,
@@ -173,6 +224,29 @@ export function App() {
             AI Panel
           </button>
 
+          {/* Collaborator Avatars */}
+          {Array.from(knownUsers.values()).filter((u) => u.online).length > 1 && (
+            <div className="flex items-center -space-x-1.5 overflow-hidden mr-2">
+              {Array.from(knownUsers.values())
+                .filter((u) => u.online)
+                .map((u) => {
+                  const initial = u.displayName.trim().substring(0, 1).toUpperCase() || "A";
+                  const isLocal = u.id === participant.id;
+                  return (
+                    <div
+                      key={u.id}
+                      style={{ borderColor: u.cursorColor }}
+                      className="relative flex h-6 w-6 items-center justify-center rounded-full border-2 bg-slate-800 text-[10px] font-bold text-white shadow-sm ring-1 ring-slate-900 transition-transform duration-200 hover:scale-110 hover:z-10"
+                      title={`${u.displayName}${isLocal ? " (You)" : ""}`}
+                      aria-label={`${u.displayName}${isLocal ? " (You)" : ""}`}
+                    >
+                      {initial}
+                    </div>
+                  );
+                })}
+            </div>
+          )}
+
           {/* Connection Indicator */}
           <div className="flex items-center gap-2 border-l border-[var(--color-border)] pl-4">
             <span
@@ -221,6 +295,74 @@ export function App() {
                 aria-label="Your display name"
                 className="w-full rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-2 py-1 text-xs text-slate-200 placeholder-slate-500 focus:border-tessera-500 focus:outline-none"
               />
+            </div>
+          </div>
+
+          {/* Collaborators section */}
+          <div className="flex flex-col gap-2">
+            <div className="flex items-center justify-between">
+              <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+                Collaborators
+              </p>
+              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-tessera-500/15 text-tessera-400 border border-tessera-500/10">
+                {Array.from(knownUsers.values()).filter(u => u.online).length} online
+              </span>
+            </div>
+            
+            <div className="mt-1 space-y-1.5 max-h-48 overflow-y-auto pr-1">
+              {Array.from(knownUsers.values()).map((user) => {
+                const isLocal = user.id === participant.id;
+                return (
+                  <div
+                    key={user.id}
+                    className="group flex items-center justify-between rounded-md p-1.5 transition-all duration-150 hover:bg-slate-800/40"
+                  >
+                    <div className="flex items-center gap-2 min-w-0">
+                      {/* Online Status Dot */}
+                      <span className="relative flex h-2 w-2 shrink-0">
+                        {user.online ? (
+                          <>
+                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                            <span className="relative inline-block h-2 w-2 rounded-full bg-emerald-500"></span>
+                          </>
+                        ) : (
+                          <span className="relative inline-block h-2 w-2 rounded-full bg-slate-600"></span>
+                        )}
+                      </span>
+                      
+                      {/* Color indicator and display name */}
+                      <span
+                        className="inline-block h-1.5 w-1.5 shrink-0 rounded-full"
+                        style={{ backgroundColor: user.cursorColor }}
+                      />
+                      <span
+                        className={`text-xs truncate font-medium ${
+                          user.online ? "text-slate-200" : "text-slate-500 line-through decoration-slate-600/50"
+                        }`}
+                        title={user.displayName}
+                      >
+                        {user.displayName}
+                        {isLocal && <span className="text-[10px] text-slate-400 font-normal ml-1">(you)</span>}
+                      </span>
+                    </div>
+
+                    {/* Status Badge */}
+                    <span className={`text-[9px] font-semibold uppercase px-1 rounded-sm ${
+                      user.online 
+                        ? "text-emerald-400 bg-emerald-500/10" 
+                        : "text-slate-500 bg-slate-500/10"
+                    }`}>
+                      {user.online ? "online" : "offline"}
+                    </span>
+                  </div>
+                );
+              })}
+              
+              {knownUsers.size === 0 && (
+                <div className="text-xs text-slate-500 italic py-2">
+                  No collaborators detected.
+                </div>
+              )}
             </div>
           </div>
 
