@@ -43,7 +43,7 @@ export function App() {
     [participant],
   );
 
-  const { ytext, awareness, connected, socket } = useCollaboration(config);
+  const { ytext, awareness, connected, socket, connectionStatus } = useCollaboration(config);
 
   // Sync displayName into the shared awareness state whenever it changes.
   // TesseraSocketProvider is already subscribed to awareness "update" events,
@@ -173,17 +173,23 @@ export function App() {
             AI Panel
           </button>
 
-          {/* Connection Indicator */}
-          <div className="flex items-center gap-2 border-l border-[var(--color-border)] pl-4">
-            <span
-              className={`inline-block h-2 w-2 rounded-full ${connected ? "bg-emerald-400" : "bg-red-400 animate-pulse"}`}
-            />
-            <span className="text-xs text-slate-400 font-medium">
-              {connected ? "Connected" : "Disconnected"}
-            </span>
-          </div>
+      {/* Connection Indicator */}
+        <div className="flex items-center gap-2 border-l border-[var(--color-border)] pl-4">
+          <span
+            className={`inline-block h-2 w-2 rounded-full ${
+              connectionStatus === 'connected' ? 'bg-emerald-400' :
+              connectionStatus === 'reconnecting' ? 'bg-yellow-400 animate-pulse' :
+              'bg-red-400 animate-pulse'
+            }`}
+          />
+          <span className="text-xs text-slate-400 font-medium select-none">
+            {connectionStatus === 'connected' && 'Connected'}
+            {connectionStatus === 'reconnecting' && 'Reconnecting...'}
+            {connectionStatus === 'disconnected' && 'Offline'}
+          </span>
         </div>
-      </header>
+      </div>
+    </header>
 
       {/* Main content */}
       <div className="flex flex-1 overflow-hidden">
