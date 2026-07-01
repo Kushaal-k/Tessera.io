@@ -12,6 +12,7 @@ const RUST_KEYWORDS = [
   "dyn",
   "else",
   "enum",
+  "extern",
   "fn",
   "for",
   "if",
