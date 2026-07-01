@@ -190,7 +190,7 @@ export function registerPythonIntelliSense(monaco: typeof Monaco): Monaco.IDispo
         {
           label: "with",
           kind: monaco.languages.CompletionItemKind.Snippet,
-          insertText: "with ${1:expression} as ${2:var}:\n\t${3:pass}",
+          insertText: "with ${1:expression} as ${2:var}:\n    ${3:pass}",
           insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
           detail: "With statement",
           range,
