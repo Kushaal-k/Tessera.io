@@ -19,6 +19,7 @@
     "cleanup": "npm run cleanup --workspace=@tessera/execution-engine"
   },
   "devDependencies": {
+    "globals": "^17.6.0",
     "turbo": "^2.9.16",
     "typescript": "^6.0.3",
     "vitest": "^4.1.7"
