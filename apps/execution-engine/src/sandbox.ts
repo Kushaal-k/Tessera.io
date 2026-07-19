@@ -87,10 +87,10 @@ const LANGUAGE_COMMANDS: Record<
   java: (code) => ["sh", "-c", `echo '${code.replace(/'/g, "'\\''")}' > /tmp/Main.java && javac /tmp/Main.java -d /tmp && java -cp /tmp Main`],
   rust: (code) => ["sh", "-c", `echo '${code.replace(/'/g, "'\\''")}' > /tmp/main.rs && rustc /tmp/main.rs -o /tmp/main && /tmp/main`],
   go: (code) => [
-  "sh",
-  "-c",
-  `echo '${code.replace(/'/g, "'\\''")}' > /tmp/main.go && go run /tmp/main.go`,
-],
+    "sh",
+    "-c",
+    `echo '${code.replace(/'/g, "'\\''")}' > /tmp/main.go && go run /tmp/main.go`,
+  ],
 };
 
 const DEFAULT_MEMORY_LIMIT_MB = 256;
@@ -134,6 +134,7 @@ async function ensureImageExists(image: string): Promise<void> {
  */
 export function formatCppCompilerErrors(rawLogs: string): string {
   // Clean Docker stream multiplexing headers (starts with stream type 1 or 2, followed by 3 null bytes and 4 length bytes)
+  // eslint-disable-next-line no-control-regex -- stripping Docker's 8-byte stream-multiplexing header (stream type + length prefix) from raw log output
   const cleanedLogs = rawLogs.replace(/[\u0000-\u0002]\u0000\u0000\u0000[\s\S]{4}/g, "");
 
   const lines = cleanedLogs.split("\n");
