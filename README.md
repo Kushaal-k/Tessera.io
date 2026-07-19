@@ -148,9 +148,15 @@ docker compose start
 cd apps/ai-service
 python3 -m venv .venv
 source .venv/bin/activate
-pip install -r requirements.txt
+pip install -r requirements.txt -r requirements-dev.txt
 cd ../..
 ```
+
+> **Working on the ML / embedding pipeline?** Also install the optional ML
+> dependencies (adds PyTorch + sentence-transformers, ~2-3 GB):
+> ```bash
+> pip install -r requirements-ml.txt
+> ```
 
 5. **Start all services in development mode:**
 ```bash
@@ -186,9 +192,15 @@ docker compose start
 cd apps/ai-service
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1
-pip install -r requirements.txt
+pip install -r requirements.txt -r requirements-dev.txt
 cd ..\..
 ```
+
+> **Working on the ML / embedding pipeline?** Also install the optional ML
+> dependencies (adds PyTorch + sentence-transformers, ~2-3 GB):
+> ```powershell
+> pip install -r requirements-ml.txt
+> ```
 
 If PowerShell blocks virtual environment activation, allow scripts for the current PowerShell session only:
 ```powershell
