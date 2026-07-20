@@ -16,17 +16,19 @@
     "dev": "tsc --project tsconfig.build.json --watch",
     "typecheck": "tsc --noEmit",
     "clean": "rm -rf dist",
-    "lint": "echo 'lint not configured yet'"
+    "lint": "eslint \"src/**/*.ts\" --max-warnings=0"
   },
   "dependencies": {
     "@tessera/shared-types": "*",
-    "yjs": "^13.6.31",
-    "y-protocols": "^1.0.7",
     "lib0": "^0.2.117",
-    "socket.io-client": "^4.8.3"
-
+    "socket.io-client": "^4.8.3",
+    "y-protocols": "^1.0.7",
+    "yjs": "^13.6.31"
   },
   "devDependencies": {
-    "typescript": "^6.0.3"
+    "@eslint/js": "^9.39.5",
+    "eslint": "^9.39.5",
+    "typescript": "^6.0.3",
+    "typescript-eslint": "^8.64.0"
   }
 }
