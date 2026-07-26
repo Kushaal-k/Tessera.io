@@ -77,10 +77,7 @@ const LANGUAGE_IMAGES: Record<SupportedLanguage, string> = {
   go: "golang:1.20-alpine",
 };
 
-const LANGUAGE_COMMANDS: Record<
-  SupportedLanguage,
-  (code: string) => string[]
-> = {
+const LANGUAGE_COMMANDS: Record<SupportedLanguage, (code: string) => string[]> = {
   typescript: (code) => ["node", "--input-type=module", "-e", code],
   python: (code) => ["python3", "-c", code],
   cpp: (code) => ["sh", "-c", `echo '${code.replace(/'/g, "'\\''")}' > /tmp/main.cpp && g++ -o /tmp/main /tmp/main.cpp && /tmp/main`],
@@ -284,6 +281,7 @@ export async function executeInSandbox(
       }
       return {
         taskId: task.id,
+        epochId: task.epochId,
         status: "timeout",
         stdout: "",
         stderr: `Execution timed out after ${String(task.timeoutMs)}ms`,
@@ -307,6 +305,7 @@ export async function executeInSandbox(
 
     return {
       taskId: task.id,
+      epochId: task.epochId,
       status: exitCode === 0 ? "completed" : "failed",
       stdout,
       stderr: formattedStderr,
@@ -317,6 +316,7 @@ export async function executeInSandbox(
     const message = err instanceof Error ? err.message : String(err);
     return {
       taskId: task.id,
+      epochId: task.epochId,
       status: "failed",
       stdout: "",
       stderr: message,
@@ -335,3 +335,4 @@ export async function executeInSandbox(
     }
   }
 }
+

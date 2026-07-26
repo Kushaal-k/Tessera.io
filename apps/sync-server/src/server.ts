@@ -139,8 +139,13 @@ io.on("connection", (socket) => {
 
   socket.on("execute-code", async (payload) => {
     if (!currentRoomId) return;
+    const room = rooms.get(currentRoomId);
+    if (!room) return;
 
     const taskId = crypto.randomUUID();
+    // Capture the epoch sent by the client at trigger time.
+    const epochAtEnqueue = payload.epochId;
+
     try {
       const task: ExecutionTask = {
         id: taskId,
@@ -149,10 +154,44 @@ io.on("connection", (socket) => {
         timeoutMs: 5000,
         roomId: currentRoomId,
         createdAt: new Date().toISOString(),
+        epochId: epochAtEnqueue,
       };
 
-      console.log(`[sync-server] enqueuing code execution ${taskId} [lang=${payload.language}]`);
+      console.log(
+        `[sync-server] enqueuing execution ${taskId} [lang=${payload.language}] epoch=${epochAtEnqueue.slice(0, 8)}…`,
+      );
       const job = await executionQueue.add("execute", task, { jobId: taskId });
+      const rawResult = (await job.waitUntilFinished(queueEvents)) as ExecutionResult;
+
+      // ── Epoch Fencing ────────────────────────────────────────────────────
+      // Re-read the room (it may have been GC'd if everyone disconnected).
+      const liveRoom = rooms.get(currentRoomId);
+      let result = rawResult;
+
+      if (liveRoom) {
+        const currentStateVector = Y.encodeStateVector(liveRoom.doc);
+        const currentEpoch = crypto
+          .createHash("sha256")
+          .update(currentStateVector)
+          .digest("hex");
+
+        if (currentEpoch !== epochAtEnqueue) {
+          // The document advanced while the sandbox was running — mark stale.
+          // The client will surface this in a read-only "Stale Execution Log"
+          // and must NOT apply it to shared document state.
+          console.warn(
+            `[sync-server] execution ${taskId} is STALE: doc epoch changed during execution. ` +
+              `Shunting result to stale log.`,
+          );
+          result = { ...rawResult, status: "stale" };
+        }
+      }
+      // ────────────────────────────────────────────────────────────────────
+
+      console.log(
+        `[sync-server] execution ${taskId} finished with status=${result.status}`,
+      );
+      socket.emit("execution-result", result);
 
       const result = await job.waitUntilFinished(queueEvents);
       console.log(`[sync-server] execution ${taskId} finished`);
@@ -166,6 +205,7 @@ io.on("connection", (socket) => {
         stderr: err instanceof Error ? err.message : String(err),
         exitCode: 1,
         durationMs: 0,
+        epochId: epochAtEnqueue,
       });
     }
   });
