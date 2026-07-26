@@ -86,6 +86,12 @@ export interface SyncClientToServerEvents {
     readonly roomId: string;
     readonly participant: Participant;
   }) => void;
+
+// Heartbeat event used to track participant liveness.
+// The server already knows the participant's active room from
+// the socket session, so no additional payload is required.
+  readonly "presence-heartbeat": () => void;
+
   readonly "sync-step-1": (stateVector: Uint8Array) => void;
   readonly "sync-step-2": (diff: Uint8Array) => void;
   readonly "sync-update": (update: Uint8Array) => void;
@@ -95,7 +101,6 @@ export interface SyncClientToServerEvents {
     readonly language: SupportedLanguage;
   }) => void;
 }
-
 export interface SyncServerToClientEvents {
   readonly "sync-step-1": (stateVector: Uint8Array) => void;
   readonly "sync-step-2": (diff: Uint8Array) => void;

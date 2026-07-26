@@ -13,17 +13,38 @@ import type {
   ExecutionResult,
 } from "@tessera/shared-types";
 
+// Tracks participant metadata together with the most recent
+// heartbeat timestamp used for presence reconciliation.
+
+interface ParticipantPresence {
+  participant: Participant;
+  lastSeen: number;
+}
+
 interface RoomState {
   readonly doc: Y.Doc;
   readonly awareness: Awareness;
-  readonly participants: Map<string, Participant>;
+  // Active participants keyed by socket.id.
+  // Each entry stores liveness information used for
+  // heartbeat-based presence tracking.
+  readonly participants: Map<string, ParticipantPresence>;
 }
+
+// Participants that have not sent a heartbeat within this
+// interval are considered stale and will be removed.
+const PRESENCE_TIMEOUT_MS = 60_000;
+
+// Frequency of stale participant cleanup checks.
+const PRESENCE_CLEANUP_INTERVAL_MS = 30_000;
 
 const PORT = Number(process.env["PORT"] ?? 4000);
 const CORS_ORIGIN = process.env["CORS_ORIGIN"] ?? "http://localhost:3000";
 const REDIS_HOST = process.env["REDIS_HOST"] ?? "127.0.0.1";
 const REDIS_PORT = Number(process.env["REDIS_PORT"] ?? 6379);
 
+// Active collaboration rooms maintained in-memory.
+// Presence cleanup periodically scans these rooms and removes
+// participants that stop sending heartbeats.
 const rooms = new Map<string, RoomState>();
 
 function getOrCreateRoom(roomId: string): RoomState {
@@ -63,6 +84,61 @@ const executionQueue = new Queue<ExecutionTask>(QUEUE_NAME, { connection: connec
 // internally, so there is no risk of cross-job event mixups.
 const queueEvents = new QueueEvents(QUEUE_NAME, { connection: connectionOptions });
 
+// Periodically remove stale participants that have stopped
+// sending heartbeats.
+const presenceCleanupTimer = setInterval(
+  cleanupStaleParticipants,
+  PRESENCE_CLEANUP_INTERVAL_MS,
+
+);
+
+function cleanupStaleParticipants(): void {
+  const now = Date.now();
+
+  for (const [, room] of rooms) {
+    for (const [socketId, presence] of room.participants) {
+      if (now - presence.lastSeen > PRESENCE_TIMEOUT_MS) {
+
+        // Remove any awareness states associated with the expired participant.
+        // This ensures cursors and presence indicators are cleaned up even when
+        // a client disappears without a graceful disconnect (network loss,
+        // browser crash, etc.).
+        const expiredClientIds: number[] = [];
+
+        room.awareness.getStates().forEach((state, clientId) => {
+          const awarenessParticipant =
+            (state as Record<string, unknown>)["participant"] as
+              Participant | undefined;
+
+          if (
+            awarenessParticipant &&
+            awarenessParticipant.id === presence.participant.id
+          ) {
+            expiredClientIds.push(clientId);
+          }
+        });
+
+        if (expiredClientIds.length > 0) {
+          removeAwarenessStates(
+            room.awareness,
+            expiredClientIds,
+            "presence-timeout",
+          );
+        }
+
+        room.participants.delete(socketId);
+
+        console.log(
+          `[presence] participant expired [socket=${socketId}]`,
+        );
+      }
+    }
+  }
+}
+
+  
+
+
 io.on("connection", (socket) => {
   let currentRoomId: string | null = null;
   let currentParticipant: Participant | null = null;
@@ -73,18 +149,42 @@ io.on("connection", (socket) => {
 
     currentRoomId = roomId;
     currentParticipant = participant;
-    room.participants.set(socket.id, participant);
-
+    room.participants.set(socket.id, {
+      participant,
+      lastSeen: Date.now(),
+    });
     void socket.join(roomId);
 
     socket.emit("room-joined", {
       roomId,
-      participants: Array.from(room.participants.values()),
+      participants: Array.from(
+        // Initialize participant presence tracking when a user joins.
+        // lastSeen is refreshed by future heartbeat events.
+        room.participants.values(),
+      ).map((presence) => presence.participant),
     });
 
     const stateVector = Y.encodeStateVector(room.doc);
     socket.emit("sync-step-1", stateVector);
   });
+
+
+
+  // Refresh participant liveness whenever a heartbeat arrives.
+  // This timestamp will later be used by the cleanup scheduler
+  // to remove stale participants and awareness states.
+  socket.on("presence-heartbeat", () => {
+    if (!currentRoomId) return;
+
+    const room = rooms.get(currentRoomId);
+    if (!room) return;
+
+    const presence = room.participants.get(socket.id);
+    if (!presence) return;
+
+    presence.lastSeen = Date.now();
+  });
+
 
   socket.on("sync-step-1", (data) => {
     if (!currentRoomId) return;
@@ -175,7 +275,7 @@ io.on("connection", (socket) => {
     const room = rooms.get(currentRoomId);
     if (!room) return;
 
-    room.participants.delete(socket.id);
+    removeParticipant(room, socket.id);
 
     if (currentParticipant) {
       removeAwarenessStates(room.awareness, [room.awareness.clientID], socket);
@@ -188,11 +288,25 @@ io.on("connection", (socket) => {
   });
 });
 
+// Remove a participant from the room's presence registry.
+// This helper is used by both disconnect handling and
+// heartbeat expiration cleanup.
+function removeParticipant(
+  room: RoomState,
+  socketId: string,
+): void {
+  room.participants.delete(socketId);
+}
+
+
 server.listen(PORT, () => {
   console.log(`sync-server listening on :${String(PORT)}`);
 });
 
 async function gracefulShutdown() {
+  // Stop stale participant cleanup before shutdown.
+  clearInterval(presenceCleanupTimer);
+
   console.log("shutting down sync-server…");
   try {
     await Promise.all([executionQueue.close(), queueEvents.close()]);
