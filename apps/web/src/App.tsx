@@ -105,7 +105,7 @@ export function App() {
       {/* Header */}
       <header className="flex items-center justify-between border-b border-[var(--color-border)] px-4 py-2 bg-[var(--color-surface)]">
         <div className="flex items-center gap-2">
-          <h1 className="text-lg font-semibold tracking-tight text-white">
+          <h1 className="text-lg font-semibold tracking-tight text-[var(--color-text)]">
             Tessera<span className="text-tessera-500">.io</span>
           </h1>
         </div>
@@ -113,11 +113,11 @@ export function App() {
         <div className="flex items-center gap-4">
           {/* Language Selector */}
           <div className="flex items-center gap-2">
-            <span className="text-xs text-slate-400">Language:</span>
+            <span className="text-xs text-[var(--color-text-muted)]">Language:</span>
             <select
               value={language}
               onChange={(e) => setLanguage(e.target.value as SupportedLanguage)}
-              className="bg-[var(--color-bg)] text-sm text-white border border-[var(--color-border)] rounded px-2 py-1 focus:outline-none focus:border-tessera-500 font-medium"
+              className="bg-[var(--color-bg)] text-sm text-[var(--color-text)] border border-[var(--color-border)] rounded px-2 py-1 focus:outline-none focus:border-tessera-500 font-medium"
             >
               <option value="typescript">TypeScript</option>
               <option value="python">Python</option>
@@ -133,16 +133,17 @@ export function App() {
             onClick={handleRunCode}
             disabled={!connected || isRunning}
             title={`Run code (${getExecutionShortcutText()})`}
-            className={`flex items-center gap-1.5 px-3 py-1 text-sm font-semibold rounded transition shadow-sm ${isRunning
-              ? "bg-slate-700 text-slate-400 cursor-not-allowed"
-              : !connected
-                ? "bg-slate-800 text-slate-500 cursor-not-allowed"
-                : "bg-tessera-600 hover:bg-tessera-500 text-white cursor-pointer active:scale-95"
-              }`}
+            className={`flex items-center gap-1.5 px-3 py-1 text-sm font-semibold rounded transition shadow-sm bg-[#00ED64] text-black ${
+              isRunning
+                ? "cursor-wait opacity-70"
+                : !connected
+                ? "cursor-not-allowed opacity-50"
+                : "hover:bg-[#00D45A] cursor-pointer active:scale-95"
+            }`}
           >
             {isRunning ? (
               <>
-                <svg className="animate-spin h-3.5 w-3.5 text-slate-400" fill="none" viewBox="0 0 24 24">
+                <svg className="animate-spin h-3.5 w-3.5 text-[var(--color-text-muted)]" fill="none" viewBox="0 0 24 24">
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
                 </svg>
@@ -158,7 +159,7 @@ export function App() {
           <button
             onClick={handleDownload}
             disabled={!ytext}
-            className="flex items-center justify-center p-1.5 text-slate-400 hover:text-white hover:bg-[var(--color-bg)] rounded transition"
+            className="flex items-center justify-center p-1.5 text-[var(--color-text-muted)] hover:text-[var(--color-text)] hover:bg-[var(--color-bg)] rounded transition"
             title={`Download ${FILE_NAMES[language]}`}>
             <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
@@ -168,7 +169,7 @@ export function App() {
           <button
             type="button"
             onClick={() => setIsAiPanelOpen(true)}
-            className="rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-3 py-1 text-sm font-semibold text-slate-200 transition hover:border-tessera-500 hover:text-white focus:outline-none focus:ring-2 focus:ring-tessera-500"
+            className="rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-3 py-1 text-sm font-semibold text-[var(--color-text)] transition hover:border-tessera-500 hover:text-[var(--color-text)] focus:outline-none focus:ring-2 focus:ring-tessera-500"
           >
             AI Panel
           </button>
@@ -178,7 +179,7 @@ export function App() {
             <span
               className={`inline-block h-2 w-2 rounded-full ${connected ? "bg-emerald-400" : "bg-red-400 animate-pulse"}`}
             />
-            <span className="text-xs text-slate-400 font-medium">
+            <span className="text-xs text-[var(--color-text-muted)] font-medium">
               {connected ? "Connected" : "Disconnected"}
             </span>
           </div>
@@ -191,7 +192,7 @@ export function App() {
         <aside className="w-56 shrink-0 border-r border-[var(--color-border)] bg-[var(--color-surface)] p-3 flex flex-col gap-4">
           {/* Explorer section */}
           <div>
-            <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+            <p className="text-xs font-semibold uppercase tracking-wider text-[var(--color-text-muted)]">
               Explorer
             </p>
             <div className="mt-3 space-y-1">
@@ -203,7 +204,7 @@ export function App() {
 
           {/* Display name section */}
           <div>
-            <p className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">
+            <p className="text-xs font-semibold uppercase tracking-wider text-[var(--color-text-muted)] mb-2">
               You
             </p>
             <div className="flex items-center gap-2">
@@ -219,7 +220,7 @@ export function App() {
                 maxLength={32}
                 placeholder="Display name"
                 aria-label="Your display name"
-                className="w-full rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-2 py-1 text-xs text-slate-200 placeholder-slate-500 focus:border-tessera-500 focus:outline-none"
+                className="w-full rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-2 py-1 text-xs text-[var(--color-text)] placeholder-[var(--color-text-muted)] focus:border-tessera-500 focus:outline-none"
               />
             </div>
           </div>
@@ -231,7 +232,7 @@ export function App() {
             </p>
             <div className="flex flex-col gap-3">
               <div className="flex items-center justify-between">
-                <label htmlFor="minimap-toggle" className="text-xs font-medium text-slate-300 cursor-pointer select-none">
+                <label htmlFor="minimap-toggle" className="text-xs font-medium text-[var(--color-text-secondary)] cursor-pointer select-none">
                   Show Minimap
                 </label>
                 <label
@@ -251,22 +252,22 @@ export function App() {
               </div>
 
               <div className="flex items-center justify-between">
-                <span className="text-xs font-medium text-slate-300">Font Size</span>
+                <span className="text-xs font-medium text-[var(--color-text-secondary)]">Font Size</span>
                 <div className="flex items-center gap-1.5">
                   <button
                     onClick={() => setFontSize((prev) => Math.max(10, prev - 1))}
                     disabled={fontSize <= 10}
-                    className="w-6 h-6 flex items-center justify-center rounded border border-[var(--color-border)] bg-[var(--color-bg)] text-xs text-slate-300 hover:text-white hover:border-tessera-500 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:border-[var(--color-border)] disabled:hover:text-slate-300 select-none transition-all active:scale-95"
+                    className="w-6 h-6 flex items-center justify-center rounded border border-[var(--color-border)] bg-[var(--color-bg)] text-xs text-[var(--color-text-secondary)] hover:text-[var(--color-text)] hover:border-tessera-500 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:border-[var(--color-border)] disabled:hover:text-[var(--color-text-secondary)] select-none transition-all active:scale-95"
                   >
                     A-
                   </button>
-                  <span className="text-xs font-mono font-medium text-slate-200 min-w-[28px] text-center">
+                  <span className="text-xs font-mono font-medium text-[var(--color-text)] min-w-[28px] text-center">
                     {fontSize}px
                   </span>
                   <button
                     onClick={() => setFontSize((prev) => Math.min(24, prev + 1))}
                     disabled={fontSize >= 24}
-                    className="w-6 h-6 flex items-center justify-center rounded border border-[var(--color-border)] bg-[var(--color-bg)] text-xs text-slate-300 hover:text-white hover:border-tessera-500 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:border-[var(--color-border)] disabled:hover:text-slate-300 select-none transition-all active:scale-95"
+                    className="w-6 h-6 flex items-center justify-center rounded border border-[var(--color-border)] bg-[var(--color-bg)] text-xs text-[var(--color-text-secondary)] hover:text-[var(--color-text)] hover:border-tessera-500 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:border-[var(--color-border)] disabled:hover:text-[var(--color-text-secondary)] select-none transition-all active:scale-95"
                   >
                     A+
                   </button>
@@ -287,7 +288,7 @@ export function App() {
               fontSize={fontSize}
             />
           ) : (
-            <div className="flex h-full flex-col items-center justify-center gap-3 text-slate-500 font-medium bg-[var(--color-bg)]">
+            <div className="flex h-full flex-col items-center justify-center gap-3 text-[var(--color-text-muted)] font-medium bg-[var(--color-bg)]">
               <svg className="animate-spin h-8 w-8 text-tessera-400" fill="none" viewBox="0 0 24 24">
                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
@@ -301,7 +302,7 @@ export function App() {
       {/* Output panel */}
       <div className="h-56 shrink-0 border-t border-[var(--color-border)] bg-[var(--color-surface)] flex flex-col p-3 overflow-hidden">
         <div className="flex items-center justify-between border-b border-[var(--color-border)] pb-2 mb-2">
-          <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+          <p className="text-xs font-semibold uppercase tracking-wider text-[var(--color-text-muted)]">
             Execution Output
           </p>
           {output && (
@@ -309,7 +310,7 @@ export function App() {
               <span className={output.status === "completed" ? "text-emerald-400" : "text-rose-400"}>
                 Status: {output.status}
               </span>
-              <span className="text-slate-400">
+              <span className="text-[var(--color-text-muted)]">
                 Duration: {output.durationMs}ms
               </span>
               {output.exitCode !== null && (
@@ -327,10 +328,10 @@ export function App() {
             <div className="space-y-1 whitespace-pre-wrap">
               {output.stdout && <div className="text-emerald-300">{output.stdout}</div>}
               {output.stderr && <div className="text-rose-400 font-semibold">{output.stderr}</div>}
-              {!output.stdout && !output.stderr && <div className="text-slate-500 italic">No output returned (Process completed with exit code {output.exitCode}).</div>}
+              {!output.stdout && !output.stderr && <div className="text-[var(--color-text-muted)] italic">No output returned (Process completed with exit code {output.exitCode}).</div>}
             </div>
           ) : (
-            <span className="text-slate-500">Ready to execute. Write some code and click "Run".</span>
+            <span className="text-[var(--color-text-muted)]">Ready to execute. Write some code and click "Run".</span>
           )}
         </div>
       </div>
@@ -341,7 +342,7 @@ export function App() {
         description={`Context: ${FILE_NAMES[language]}`}
         onClose={() => setIsAiPanelOpen(false)}
       >
-        <div className="rounded border border-dashed border-[var(--color-border)] bg-[var(--color-bg)] p-4 text-sm text-slate-400">
+        <div className="rounded border border-dashed border-[var(--color-border)] bg-[var(--color-bg)] p-4 text-sm text-[var(--color-text-muted)]">
           Ready for editor context.
         </div>
       </SidePanel>
