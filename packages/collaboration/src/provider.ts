@@ -8,6 +8,21 @@ export interface TesseraProviderOptions {
   readonly awareness: Awareness;
 }
 
+/**
+ * Connection diagnostics reported via console telemetry when a room
+ * session is established and when it is torn down. Helps developers
+ * spot slow handshakes or one-sided sync traffic during debugging.
+ */
+interface ConnectionTelemetry {
+  readonly synced: boolean;
+  readonly syncLatencyMs: number | null;
+  readonly sessionDurationMs: number;
+  readonly docUpdatesSent: number;
+  readonly docUpdatesReceived: number;
+  readonly awarenessUpdatesSent: number;
+  readonly awarenessUpdatesReceived: number;
+}
+
 export class TesseraSocketProvider {
   readonly ydoc: Y.Doc;
   readonly awareness: Awareness;
@@ -19,6 +34,15 @@ export class TesseraSocketProvider {
   private pendingAwarenessClients = new Set<number>();
   
   private static readonly AWARENESS_THROTTLE_MS = 50;
+
+  // Connection telemetry: timestamps/counters used to report sync
+  // latency and diagnostic stats when the session opens and closes.
+  private readonly sessionStartedAt = performance.now();
+  private syncLatencyMs: number | null = null;
+  private docUpdatesSent = 0;
+  private docUpdatesReceived = 0;
+  private awarenessUpdatesSent = 0;
+  private awarenessUpdatesReceived = 0;
 
   constructor(options: TesseraProviderOptions) {
     this.socket = options.socket;
@@ -50,6 +74,8 @@ export class TesseraSocketProvider {
     this.socket.off("sync-step-2", this.handleSyncStep2);
     this.socket.off("sync-update", this.handleSyncUpdate);
     this.socket.off("awareness-update", this.handleAwarenessRemoteUpdate);
+
+    console.info("[TesseraProvider] room session closed", this.getTelemetry());
   }
 
   /**
@@ -64,6 +90,18 @@ export class TesseraSocketProvider {
     this.ydoc.transact(() => {
       ytext.delete(0, ytext.length);
     });
+  }
+
+  private getTelemetry(): ConnectionTelemetry {
+    return {
+      synced: this.synced,
+      syncLatencyMs: this.syncLatencyMs,
+      sessionDurationMs: Math.round(performance.now() - this.sessionStartedAt),
+      docUpdatesSent: this.docUpdatesSent,
+      docUpdatesReceived: this.docUpdatesReceived,
+      awarenessUpdatesSent: this.awarenessUpdatesSent,
+      awarenessUpdatesReceived: this.awarenessUpdatesReceived,
+    };
   }
 
   private sendSyncStep1(): void {
@@ -105,7 +143,11 @@ export class TesseraSocketProvider {
       this.ydoc.transact(() => {
         Y.applyUpdate(this.ydoc, new Uint8Array(data), this);
       }, this);
-      this.synced = true;
+      if (!this.synced) {
+        this.synced = true;
+        this.syncLatencyMs = Math.round(performance.now() - this.sessionStartedAt);
+        console.info("[TesseraProvider] room session established", this.getTelemetry());
+      }
     } catch (err: unknown) {
       console.error("[TesseraProvider] sync-step-2 error:", err);
     }
@@ -119,6 +161,7 @@ export class TesseraSocketProvider {
       this.ydoc.transact(() => {
         Y.applyUpdate(this.ydoc, new Uint8Array(data), this);
       }, this);
+      this.docUpdatesReceived += 1;
     } catch (err: unknown) {
       console.error("[TesseraProvider] sync-update error:", err);
     }
@@ -131,6 +174,7 @@ export class TesseraSocketProvider {
     // Skip updates that originated from this provider to avoid echo
     if (origin === this) return;
     this.socket.emit("sync-update", update);
+    this.docUpdatesSent += 1;
   };
 
   private readonly handleAwarenessLocalUpdate = ({
@@ -160,6 +204,7 @@ export class TesseraSocketProvider {
       );
 
       this.socket.emit("awareness-update", encoded);
+      this.awarenessUpdatesSent += 1;
     }
 
     this.pendingAwarenessClients.clear();
@@ -169,6 +214,7 @@ export class TesseraSocketProvider {
   private readonly handleAwarenessRemoteUpdate = (data: Uint8Array): void => {
     try {
       applyAwarenessUpdate(this.awareness, new Uint8Array(data), this);
+      this.awarenessUpdatesReceived += 1;
     } catch (err: unknown) {
       console.error("[TesseraProvider] awareness-update error:", err);
     }
