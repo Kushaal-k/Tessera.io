@@ -10,6 +10,7 @@ import { setLocalParticipant } from "@tessera/collaboration";
 import type { SyncConnectionConfig, SupportedLanguage, ExecutionResult } from "@tessera/shared-types";
 import { useDebouncedValue } from "./hooks/useDebouncedValue.js";
 import { downloadTextFile } from "./utils/downloadUtils.js";
+import { copyTextToClipboard } from "./utils/clipboardUtils.js";
 
 const SYNC_SERVER_URL = "http://localhost:4000";
 const DEFAULT_ROOM = "default-room";
@@ -33,6 +34,7 @@ export function App() {
   const [output, setOutput] = useState<ExecutionResult | null>(null);
   const [showMinimap, setShowMinimap] = useState(true);
   const [fontSize, setFontSize] = useState(14);
+  const [isCopied, setIsCopied] = useState(false);
 
   const config = useMemo<SyncConnectionConfig>(
     () => ({
@@ -100,6 +102,18 @@ export function App() {
     if (!ytext) return;
     downloadTextFile(ytext.toString(), FILE_NAMES[language]);
   };
+
+  const handleCopyCode = async () => {
+    if (!ytext) return;
+    try {
+      await copyTextToClipboard(ytext.toString());
+      setIsCopied(true);
+      setTimeout(() => setIsCopied(false), 2000);
+    } catch {
+      // Clipboard write can fail when the page is not focused or
+      // the user has denied clipboard permissions — fail silently.
+    }
+  };
   return (
     <div className="flex h-screen flex-col bg-[var(--color-bg)]">
       {/* Header */}
@@ -163,6 +177,24 @@ export function App() {
             <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
             </svg>
+          </button>
+
+          {/* Copy Code Button */}
+          <button
+            onClick={handleCopyCode}
+            disabled={!ytext}
+            className="flex items-center justify-center p-1.5 text-slate-400 hover:text-white hover:bg-[var(--color-bg)] rounded transition disabled:opacity-40 disabled:cursor-not-allowed"
+            title="Copy code to clipboard"
+          >
+            {isCopied ? (
+              <svg className="h-4 w-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
+            ) : (
+              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+              </svg>
+            )}
           </button>
 
           <button
